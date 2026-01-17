@@ -119,7 +119,7 @@ export function ReconcileModal({
         relevantTx.filter((tx) => tx.state === 'CLEARED').map((tx) => tx.id)
       )
       setSelectedTxIds(clearedIds)
-    } catch (err) {
+    } catch {
       setError('Failed to fetch transactions')
     }
   }
@@ -134,7 +134,7 @@ export function ReconcileModal({
       if (firstCategory) {
         setAdjustmentCategoryId(firstCategory.id)
       }
-    } catch (err) {
+    } catch {
       // Non-critical, just for adjustment dropdown
     }
   }
@@ -247,7 +247,7 @@ export function ReconcileModal({
             }
           : null
       )
-    } catch (err) {
+    } catch {
       setError('Failed to mark all transactions')
     } finally {
       setIsSubmitting(false)
@@ -277,7 +277,7 @@ export function ReconcileModal({
             }
           : null
       )
-    } catch (err) {
+    } catch {
       setError('Failed to clear selection')
     } finally {
       setIsSubmitting(false)
@@ -331,7 +331,7 @@ export function ReconcileModal({
     if (reconciliation) {
       try {
         await reconciliationService.cancel(reconciliation.id)
-      } catch (err) {
+      } catch {
         // Ignore cancellation errors
       }
     }
