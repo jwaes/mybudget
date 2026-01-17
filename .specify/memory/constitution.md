@@ -1,8 +1,8 @@
 <!--
-Sync Impact Report - Constitution v1.0.0
+Sync Impact Report - Constitution v1.1.0
 
-Version Change: Initial version → 1.0.0
-Rationale: Initial constitution creation for mybudget project
+Version Change: 1.0.0 → 1.1.0
+Rationale: Added UI consistency and responsive design principles for shadcn/ui migration
 
 Core Principles Established:
 1. Test-First Development (TDD) - MANDATORY red-green-refactor cycle
@@ -10,16 +10,19 @@ Core Principles Established:
 3. Type Safety - Full type hints with mypy strict mode
 4. Code Quality - Automated linting and formatting
 5. Simplicity First - YAGNI and minimal viable implementation
+6. Consistent UI with shadcn (NEW) - Use shadcn/ui components for consistent design
+7. Responsive Design (NEW) - Mobile-first adaptive interfaces
 
 Templates Status:
-- ✅ plan-template.md - Constitution Check section aligns with principles
-- ✅ spec-template.md - User scenarios support testable requirements
-- ✅ tasks-template.md - Test-first workflow matches TDD principle
+- ✅ plan-template.md - Constitution Check section updated for new principles
+- ✅ spec-template.md - User scenarios support responsive/UI requirements
+- ✅ tasks-template.md - Test-first workflow includes component tests
 
 Follow-up Actions:
-- None - all templates align with constitution requirements
+- Update plan template Constitution Check table to include Principles VI and VII
+- Ensure frontend component tests cover responsive breakpoints
 
-Date: 2026-01-16
+Date: 2026-01-17
 -->
 
 # MyBudget Constitution
@@ -80,6 +83,30 @@ Date: 2026-01-16
 - Delete unused code immediately
 
 **Rationale**: Simplicity reduces maintenance burden, minimizes bugs, and keeps the codebase understandable. Future requirements should drive future changes, not speculation.
+
+### VI. Consistent UI with shadcn/ui
+
+**shadcn/ui components MUST be used for all frontend UI elements**:
+- Use shadcn/ui primitives (Button, Input, Dialog, etc.) instead of custom implementations
+- Follow the New York style variant for a professional, clean appearance
+- Use Tailwind CSS utility classes for styling, not custom CSS
+- Leverage Radix UI accessibility features built into shadcn components
+- Component variants (primary, secondary, destructive) MUST be used consistently
+- Forms MUST use shadcn form components with proper validation states
+
+**Rationale**: shadcn/ui provides accessible, well-tested components that ensure visual consistency across the application. Using a unified component library reduces custom CSS, improves maintainability, and provides a professional user experience appropriate for a financial application.
+
+### VII. Responsive Design
+
+**All UI components MUST adapt to different screen sizes**:
+- Mobile-first approach: design for mobile (320px), then scale up
+- Breakpoints: mobile (<768px), tablet (768px-1024px), desktop (>1024px)
+- Touch targets MUST be at least 44x44px on mobile
+- Navigation MUST be accessible on all screen sizes (hamburger menu on mobile)
+- Tables and data-heavy views MUST be scrollable or adapt layout on mobile
+- Test all UI changes across mobile, tablet, and desktop viewports
+
+**Rationale**: Users expect to access financial applications from any device. Responsive design ensures the application is usable and professional on phones, tablets, and desktops without maintaining separate codebases.
 
 ## Development Workflow
 
@@ -230,4 +257,4 @@ Reviewers MUST verify:
 
 This constitution is a living document that evolves with the project. When practices consistently conflict with principles, update the constitution rather than ignore violations.
 
-**Version**: 1.0.0 | **Ratified**: 2026-01-16 | **Last Amended**: 2026-01-16
+**Version**: 1.1.0 | **Ratified**: 2026-01-16 | **Last Amended**: 2026-01-17
