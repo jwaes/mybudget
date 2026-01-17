@@ -276,9 +276,15 @@ describe('RegisterPage', () => {
 
     renderRegisterPage()
 
-    await waitFor(() => {
-      expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
-    })
+    // Wait for form to be fully rendered and enabled (after initial auth check)
+    await waitFor(
+      () => {
+        const emailInput = screen.getByLabelText(/email/i)
+        expect(emailInput).toBeInTheDocument()
+        expect(emailInput).not.toBeDisabled()
+      },
+      { timeout: 3000 }
+    )
 
     const emailInput = screen.getByLabelText(/email/i)
     const passwordInput = screen.getByLabelText(/^password$/i)
@@ -291,21 +297,35 @@ describe('RegisterPage', () => {
 
     // Select timezone using shadcn Select (click to open, click option)
     await user.click(timezoneSelect)
-    await waitFor(() => {
-      expect(screen.getByRole('option', { name: /Europe\/Brussels/ })).toBeInTheDocument()
-    })
+    await waitFor(
+      () => {
+        expect(screen.getByRole('option', { name: /Europe\/Brussels/ })).toBeInTheDocument()
+      },
+      { timeout: 3000 }
+    )
     await user.click(screen.getByRole('option', { name: /Europe\/Brussels/ }))
+
+    // Wait for select to close and show selected value
+    await waitFor(
+      () => {
+        expect(timezoneSelect).toHaveTextContent(/Europe\/Brussels/)
+      },
+      { timeout: 3000 }
+    )
 
     const submitButton = screen.getByRole('button', { name: /create account/i })
     await user.click(submitButton)
 
-    await waitFor(() => {
-      expect(authService.register).toHaveBeenCalledWith({
-        email: 'newuser@example.com',
-        password: 'password123',
-        timezone: 'Europe/Brussels',
-      })
-    })
+    await waitFor(
+      () => {
+        expect(authService.register).toHaveBeenCalledWith({
+          email: 'newuser@example.com',
+          password: 'password123',
+          timezone: 'Europe/Brussels',
+        })
+      },
+      { timeout: 3000 }
+    )
   })
 
   it('should show error message for duplicate email', async () => {
