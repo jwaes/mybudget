@@ -53,6 +53,6 @@ def validate_session_token(token: str) -> uuid.UUID | None:
 # Cookie configuration constants
 SESSION_COOKIE_NAME = "session"
 SESSION_COOKIE_MAX_AGE = settings.SESSION_LIFETIME_MINUTES * 60  # In seconds
-SESSION_COOKIE_SECURE = settings.ENVIRONMENT != "development"  # HTTPS only in prod
+SESSION_COOKIE_SECURE = settings.ENVIRONMENT not in ("development", "test")  # HTTPS only in prod
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "lax"
