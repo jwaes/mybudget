@@ -1,0 +1,348 @@
+openapi: 3.0.3
+info:
+  title: MyBudget Targets API
+  version: 1.0.0
+  description: |
+    API for managing spending targets in MyBudget MVP.
+    Supports three target types: Monthly Needed, Target Balance, Target by Date.
+
+servers:
+  - url: http://localhost:8000/api
+    description: Local development server
+
+paths:
+  /targets:
+    get:
+      summary: List all targets for the user
+      operationId: listTargets
+      tags:
+        - Targets
+      responses:
+        '200':
+          description: List of category targets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CategoryTargetResponse'
+
+    post:
+      summary: Create a new spending target
+      operationId: createTarget
+      tags:
+        - Targets
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryTargetCreate'
+      responses:
+        '201':
+          description: Target created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryTargetResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Category already has a target
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /targets/{target_id}:
+    get:
+      summary: Get a specific target
+      operationId: getTarget
+      tags:
+        - Targets
+      parameters:
+        - $ref: '#/components/parameters/TargetId'
+      responses:
+        '200':
+          description: Target details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryTargetResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      summary: Update an existing target
+      operationId: updateTarget
+      tags:
+        - Targets
+      parameters:
+        - $ref: '#/components/parameters/TargetId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryTargetUpdate'
+      responses:
+        '200':
+          description: Target updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryTargetResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      summary: Delete a target
+      operationId: deleteTarget
+      tags:
+        - Targets
+      parameters:
+        - $ref: '#/components/parameters/TargetId'
+      responses:
+        '204':
+          description: Target deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /targets/{target_id}/underfunded:
+    get:
+      summary: Calculate underfunded amount for a target
+      description: |
+        Calculates underfunded amount based on target type and current month.
+        Per FR-028 formulas:
+        - Monthly Needed: max(0, target_amount - funded_this_month)
+        - Target Balance: max(0, target_amount - available_now)
+        - Target by Date: max(0, suggested_monthly - funded_this_month)
+      operationId: calculateUnderfunded
+      tags:
+        - Targets
+      parameters:
+        - $ref: '#/components/parameters/TargetId'
+        - name: month
+          in: query
+          description: Month for calculation (YYYY-MM-DD, first day of month)
+          schema:
+            type: string
+            format: date
+            example: "2026-01-01"
+          required: false
+      responses:
+        '200':
+          description: Underfunded calculation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnderfundedResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  schemas:
+    CategoryTargetCreate:
+      type: object
+      required:
+        - category_id
+        - target_type
+        - amount
+      properties:
+        category_id:
+          type: string
+          format: uuid
+          description: UUID of the category
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        target_type:
+          $ref: '#/components/schemas/TargetType'
+        amount:
+          type: string
+          pattern: '^\d+\.\d{2}$'
+          description: Target amount (decimal string for precision)
+          example: "400.00"
+        target_date:
+          type: string
+          format: date
+          description: Required for TARGET_BY_DATE, must be in future
+          example: "2026-10-31"
+
+    CategoryTargetUpdate:
+      type: object
+      properties:
+        target_type:
+          $ref: '#/components/schemas/TargetType'
+        amount:
+          type: string
+          pattern: '^\d+\.\d{2}$'
+          description: Target amount (decimal string for precision)
+          example: "500.00"
+        target_date:
+          type: string
+          format: date
+          nullable: true
+          description: Required for TARGET_BY_DATE
+          example: "2026-12-31"
+
+    CategoryTargetResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+        category_id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        category_name:
+          type: string
+          description: Name of the category (for convenience)
+          example: "Groceries"
+        target_type:
+          $ref: '#/components/schemas/TargetType'
+        amount:
+          type: string
+          description: Target amount (decimal string)
+          example: "400.00"
+        target_date:
+          type: string
+          format: date
+          nullable: true
+          example: "2026-10-31"
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-01-16T10:30:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2026-01-16T10:30:00Z"
+
+    UnderfundedResponse:
+      type: object
+      properties:
+        target_id:
+          type: string
+          format: uuid
+          example: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+        category_id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        month:
+          type: string
+          format: date
+          description: Month for calculation (first day)
+          example: "2026-01-01"
+        target_type:
+          $ref: '#/components/schemas/TargetType'
+        target_amount:
+          type: string
+          example: "400.00"
+        funded_this_month:
+          type: string
+          description: Sum of assignments for this month
+          example: "250.00"
+        available_now:
+          type: string
+          description: Current available amount (rollover + funded - activity)
+          example: "200.00"
+        suggested_monthly:
+          type: string
+          description: For TARGET_BY_DATE: monthly suggestion
+          example: "150.00"
+          nullable: true
+        months_left:
+          type: integer
+          description: For TARGET_BY_DATE: months remaining
+          example: 4
+          nullable: true
+        underfunded:
+          type: string
+          description: Amount needed to meet target this month
+          example: "150.00"
+        status:
+          type: string
+          enum: [UNDERFUNDED, FUNDED, OVERFUNDED]
+          description: |
+            - UNDERFUNDED: underfunded > 0
+            - FUNDED: underfunded = 0
+            - OVERFUNDED: funded_this_month > target_amount (Monthly Needed only)
+          example: "UNDERFUNDED"
+
+    TargetType:
+      type: string
+      enum:
+        - MONTHLY_NEEDED
+        - TARGET_BALANCE
+        - TARGET_BY_DATE
+      description: |
+        - MONTHLY_NEEDED: Fund €X each month
+        - TARGET_BALANCE: Maintain €X available always
+        - TARGET_BY_DATE: Reach €X by specific date
+      example: "MONTHLY_NEEDED"
+
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+          example: "Category already has a target"
+        error_code:
+          type: string
+          example: "TARGET_ALREADY_EXISTS"
+
+  parameters:
+    TargetId:
+      name: target_id
+      in: path
+      required: true
+      description: UUID of the category target
+      schema:
+        type: string
+        format: uuid
+        example: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+
+  responses:
+    BadRequest:
+      description: Invalid request data
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            invalid_amount:
+              value:
+                detail: "Amount must be greater than zero"
+                error_code: "INVALID_AMOUNT"
+            missing_target_date:
+              value:
+                detail: "target_date required for TARGET_BY_DATE"
+                error_code: "MISSING_TARGET_DATE"
+            past_target_date:
+              value:
+                detail: "target_date cannot be in the past"
+                error_code: "INVALID_TARGET_DATE"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            detail: "Target not found"
+            error_code: "NOT_FOUND"
+
+  securitySchemes:
+    sessionAuth:
+      type: apiKey
+      in: cookie
+      name: mybudget_session
+      description: HTTP-only session cookie (set after login)
+
+security:
+  - sessionAuth: []
