@@ -86,25 +86,37 @@ describe('RegisterPage', () => {
     const user = userEvent.setup()
     renderRegisterPage()
 
-    await waitFor(() => {
-      expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
-    })
+    // Wait for form to be fully rendered
+    await waitFor(
+      () => {
+        expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
+      },
+      { timeout: 3000 }
+    )
 
     const submitButton = screen.getByRole('button', { name: /register|sign up|create account/i })
     await user.click(submitButton)
 
-    await waitFor(() => {
-      expect(screen.getByText(/email.*required|please enter.*email/i)).toBeInTheDocument()
-    })
+    // Wait for validation error
+    await waitFor(
+      () => {
+        expect(screen.getByText(/email is required/i)).toBeInTheDocument()
+      },
+      { timeout: 3000 }
+    )
   })
 
   it('should show validation error for invalid email format', async () => {
     const user = userEvent.setup()
     renderRegisterPage()
 
-    await waitFor(() => {
-      expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
-    })
+    // Wait for form to be fully rendered
+    await waitFor(
+      () => {
+        expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
+      },
+      { timeout: 3000 }
+    )
 
     const emailInput = screen.getByLabelText(/email/i)
     await user.type(emailInput, 'invalid-email')
@@ -112,7 +124,7 @@ describe('RegisterPage', () => {
     const submitButton = screen.getByRole('button', { name: /register|sign up|create account/i })
     await user.click(submitButton)
 
-    // Wait for validation error to appear
+    // Wait for validation error
     await waitFor(
       () => {
         expect(screen.getByText(/please enter a valid email address/i)).toBeInTheDocument()
@@ -125,9 +137,13 @@ describe('RegisterPage', () => {
     const user = userEvent.setup()
     renderRegisterPage()
 
-    await waitFor(() => {
-      expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
-    })
+    // Wait for form to be fully rendered
+    await waitFor(
+      () => {
+        expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
+      },
+      { timeout: 3000 }
+    )
 
     const emailInput = screen.getByLabelText(/email/i)
     const passwordInput = screen.getByLabelText(/^password$/i)
@@ -138,18 +154,26 @@ describe('RegisterPage', () => {
     const submitButton = screen.getByRole('button', { name: /register|sign up|create account/i })
     await user.click(submitButton)
 
-    await waitFor(() => {
-      expect(screen.getByText(/8 characters|too short|at least 8/i)).toBeInTheDocument()
-    })
+    // Wait for validation error
+    await waitFor(
+      () => {
+        expect(screen.getByText(/password must be at least 8 characters/i)).toBeInTheDocument()
+      },
+      { timeout: 3000 }
+    )
   })
 
   it('should show validation error when passwords do not match', async () => {
     const user = userEvent.setup()
     renderRegisterPage()
 
-    await waitFor(() => {
-      expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
-    })
+    // Wait for form to be fully rendered
+    await waitFor(
+      () => {
+        expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
+      },
+      { timeout: 3000 }
+    )
 
     const emailInput = screen.getByLabelText(/email/i)
     const passwordInput = screen.getByLabelText(/^password$/i)
@@ -162,18 +186,26 @@ describe('RegisterPage', () => {
     const submitButton = screen.getByRole('button', { name: /register|sign up|create account/i })
     await user.click(submitButton)
 
-    await waitFor(() => {
-      expect(screen.getByText(/passwords.*match|do not match|must match/i)).toBeInTheDocument()
-    })
+    // Wait for validation error
+    await waitFor(
+      () => {
+        expect(screen.getByText(/passwords do not match/i)).toBeInTheDocument()
+      },
+      { timeout: 3000 }
+    )
   })
 
   it('should show validation error when timezone is not selected', async () => {
     const user = userEvent.setup()
     renderRegisterPage()
 
-    await waitFor(() => {
-      expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
-    })
+    // Wait for form to be fully rendered
+    await waitFor(
+      () => {
+        expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
+      },
+      { timeout: 3000 }
+    )
 
     const emailInput = screen.getByLabelText(/email/i)
     const passwordInput = screen.getByLabelText(/^password$/i)
@@ -186,9 +218,13 @@ describe('RegisterPage', () => {
     const submitButton = screen.getByRole('button', { name: /register|sign up|create account/i })
     await user.click(submitButton)
 
-    await waitFor(() => {
-      expect(screen.getByText(/please select a timezone|timezone.*required/i)).toBeInTheDocument()
-    })
+    // Wait for validation error
+    await waitFor(
+      () => {
+        expect(screen.getByText(/please select a timezone/i)).toBeInTheDocument()
+      },
+      { timeout: 3000 }
+    )
   })
 
   it('should have timezone dropdown with IANA timezone options', async () => {
