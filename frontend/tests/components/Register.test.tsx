@@ -365,13 +365,17 @@ describe('RegisterPage', () => {
     const submitButton = screen.getByRole('button', { name: /register|sign up|create account/i })
     await user.click(submitButton)
 
+    // First wait for the loading state to be visible (button text changes)
     await waitFor(() => {
-      expect(emailInput).toBeDisabled()
-      expect(passwordInput).toBeDisabled()
-      expect(confirmPasswordInput).toBeDisabled()
-      // shadcn Select uses aria-disabled for disabled state
-      expect(timezoneSelect).toHaveAttribute('disabled')
+      expect(screen.getByRole('button', { name: /creating account/i })).toBeInTheDocument()
     })
+
+    // Now check that inputs are disabled
+    expect(emailInput).toBeDisabled()
+    expect(passwordInput).toBeDisabled()
+    expect(confirmPasswordInput).toBeDisabled()
+    // shadcn Select uses disabled attribute
+    expect(timezoneSelect).toBeDisabled()
 
     // Cleanup
     resolveRegister!(mockUser)
