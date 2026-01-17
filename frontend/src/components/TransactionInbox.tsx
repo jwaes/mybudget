@@ -9,6 +9,27 @@ import { transactionService } from '@/services/transactionService'
 import { categoryService } from '@/services/categoryService'
 import type { Transaction } from '@/types/transaction'
 import type { CategoryGroupWithCategories } from '@/types/category'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { cn } from '@/lib/utils'
 
 interface TransactionInboxProps {
   accountId?: string
@@ -89,84 +110,106 @@ export function TransactionInbox({
   }
 
   if (isLoading) {
-    return <div className="transaction-inbox loading">Loading transactions...</div>
+    return (
+      <Card className="p-6">
+        <Skeleton className="h-6 w-32 mb-4" />
+        <div className="space-y-3">
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+        </div>
+      </Card>
+    )
   }
 
   if (error) {
     return (
-      <div className="transaction-inbox error">
-        <p>Error: {error}</p>
-        <button onClick={loadData}>Retry</button>
-      </div>
+      <Card className="p-6 text-center">
+        <p className="text-destructive mb-4">Error: {error}</p>
+        <Button onClick={loadData}>Retry</Button>
+      </Card>
     )
   }
 
   if (transactions.length === 0) {
     return (
-      <div className="transaction-inbox empty">
-        <p>No transactions in inbox.</p>
+      <Card className="p-8 text-center text-muted-foreground">
+        <p className="mb-2">No transactions in inbox.</p>
         <p>All transactions have been categorized!</p>
-      </div>
+      </Card>
     )
   }
 
   return (
-    <div className="transaction-inbox">
-      <h2>Inbox ({transactions.length})</h2>
-      <table className="transactions-table">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Payee</th>
-            <th>Amount</th>
-            <th>Category</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
+    <Card>
+      <div className="p-4 border-b">
+        <h2 className="text-lg font-semibold">Inbox ({transactions.length})</h2>
+      </div>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Date</TableHead>
+            <TableHead>Payee</TableHead>
+            <TableHead className="text-right">Amount</TableHead>
+            <TableHead>Category</TableHead>
+            <TableHead className="w-[100px]">Action</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {transactions.map((tx) => (
-            <tr key={tx.id} className="transaction-row">
-              <td className="tx-date">{formatDate(tx.date)}</td>
-              <td className="tx-payee">
-                {tx.payee}
-                {tx.memo && <span className="tx-memo">{tx.memo}</span>}
-              </td>
-              <td className={`tx-amount ${parseFloat(tx.amount) < 0 ? 'negative' : 'positive'}`}>
+            <TableRow key={tx.id}>
+              <TableCell className="text-muted-foreground">{formatDate(tx.date)}</TableCell>
+              <TableCell>
+                <div className="font-medium">{tx.payee}</div>
+                {tx.memo && (
+                  <div className="text-sm text-muted-foreground">{tx.memo}</div>
+                )}
+              </TableCell>
+              <TableCell
+                className={cn(
+                  'text-right tabular-nums',
+                  parseFloat(tx.amount) < 0 ? 'text-destructive' : 'text-green-600'
+                )}
+              >
                 {formatCurrency(tx.amount)}
-              </td>
-              <td className="tx-category">
-                <select
+              </TableCell>
+              <TableCell>
+                <Select
                   value={selectedCategory[tx.id] || ''}
-                  onChange={(e) => handleCategoryChange(tx.id, e.target.value)}
-                  aria-label="Select category"
+                  onValueChange={(value) => handleCategoryChange(tx.id, value)}
                 >
-                  <option value="">Select category...</option>
-                  <option value="READY_TO_ASSIGN">➡️ Ready to Assign</option>
-                  {categories.map((group) => (
-                    <optgroup key={group.id} label={group.name}>
-                      {group.categories.map((cat) => (
-                        <option key={cat.id} value={cat.id}>
-                          {cat.name}
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
-              </td>
-              <td className="tx-action">
-                <button
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Select category..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="READY_TO_ASSIGN">Ready to Assign</SelectItem>
+                    {categories.map((group) => (
+                      <SelectGroup key={group.id}>
+                        <SelectLabel>{group.name}</SelectLabel>
+                        {group.categories.map((cat) => (
+                          <SelectItem key={cat.id} value={cat.id}>
+                            {cat.name}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </TableCell>
+              <TableCell>
+                <Button
+                  size="sm"
                   onClick={() => handleApprove(tx.id)}
                   disabled={!selectedCategory[tx.id]}
-                  aria-label="Approve transaction"
                 >
                   Approve
-                </button>
-              </td>
-            </tr>
+                </Button>
+              </TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
-    </div>
+        </TableBody>
+      </Table>
+    </Card>
   )
 }
 

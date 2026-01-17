@@ -8,6 +8,17 @@ import { useState } from 'react'
 import { AccountList } from '@/components/AccountList'
 import { accountService } from '@/services/accountService'
 import type { AccountType } from '@/types/account'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 export function AccountsPage() {
   const [isCreating, setIsCreating] = useState(false)
@@ -50,73 +61,82 @@ export function AccountsPage() {
   }
 
   return (
-    <div className="accounts-page">
-      <header className="page-header">
-        <h1>Accounts</h1>
+    <div className="p-4">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-foreground">Accounts</h1>
         {!isCreating && (
-          <button onClick={() => setIsCreating(true)} className="create-button">
+          <Button onClick={() => setIsCreating(true)}>
             + New Account
-          </button>
+          </Button>
         )}
-      </header>
+      </div>
 
       {isCreating && (
-        <form onSubmit={handleCreateAccount} className="create-account-form">
-          <h2>Create Account</h2>
-          {error && <p className="error-message">{error}</p>}
+        <Card className="mb-6 max-w-md">
+          <CardHeader>
+            <CardTitle>Create Account</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleCreateAccount} className="space-y-4">
+              {error && (
+                <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">
+                  {error}
+                </div>
+              )}
 
-          <div className="form-group">
-            <label htmlFor="name">Account Name</label>
-            <input
-              id="name"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g., Main Checking"
-              autoFocus
-            />
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="name">Account Name</Label>
+                <Input
+                  id="name"
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g., Main Checking"
+                  autoFocus
+                />
+              </div>
 
-          <div className="form-group">
-            <label htmlFor="accountType">Account Type</label>
-            <select
-              id="accountType"
-              value={accountType}
-              onChange={(e) => setAccountType(e.target.value as AccountType)}
-            >
-              <option value="CHECKING">Checking</option>
-              <option value="SAVINGS">Savings</option>
-            </select>
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="accountType">Account Type</Label>
+                <Select value={accountType} onValueChange={(v) => setAccountType(v as AccountType)}>
+                  <SelectTrigger id="accountType">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="CHECKING">Checking</SelectItem>
+                    <SelectItem value="SAVINGS">Savings</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-          <div className="form-group">
-            <label htmlFor="initialBalance">Initial Balance</label>
-            <input
-              id="initialBalance"
-              type="number"
-              step="0.01"
-              value={initialBalance}
-              onChange={(e) => setInitialBalance(e.target.value)}
-              placeholder="0.00"
-            />
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="initialBalance">Initial Balance</Label>
+                <Input
+                  id="initialBalance"
+                  type="number"
+                  step="0.01"
+                  value={initialBalance}
+                  onChange={(e) => setInitialBalance(e.target.value)}
+                  placeholder="0.00"
+                />
+              </div>
 
-          <div className="form-actions">
-            <button type="submit" className="submit-button">
-              Create Account
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setIsCreating(false)
-                setError(null)
-              }}
-              className="cancel-button"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
+              <div className="flex gap-2 pt-2">
+                <Button type="submit">Create Account</Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setIsCreating(false)
+                    setError(null)
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
       )}
 
       <AccountList key={refreshKey} />

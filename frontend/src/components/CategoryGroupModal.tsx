@@ -7,6 +7,16 @@
 import { useState, useEffect, type FormEvent } from 'react'
 import type { CategoryGroup, CategoryGroupCreate, CategoryGroupUpdate } from '@/types/category'
 import { categoryService } from '@/services/categoryService'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 
 interface CategoryGroupModalProps {
   existingGroup?: CategoryGroup | null
@@ -41,8 +51,6 @@ export function CategoryGroupModal({
       setIsDeleting(false)
     }
   }, [isOpen, existingGroup])
-
-  if (!isOpen) return null
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -112,204 +120,61 @@ export function CategoryGroupModal({
   const isLoading = isSubmitting || isDeleting
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <header className="modal-header">
-          <h2>{existingGroup ? 'Edit Category Group' : 'Create Category Group'}</h2>
-          <button className="close-btn" onClick={onClose} aria-label="Close">
-            &times;
-          </button>
-        </header>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>
+            {existingGroup ? 'Edit Category Group' : 'Create Category Group'}
+          </DialogTitle>
+        </DialogHeader>
 
         <form onSubmit={handleSubmit}>
-          {error && <div className="error-message">{error}</div>}
+          {error && (
+            <div className="mb-4 rounded-md bg-destructive/15 p-3 text-sm text-destructive">
+              {error}
+            </div>
+          )}
 
-          <div className="form-group">
-            <label htmlFor="groupName">Group Name</label>
-            <input
-              id="groupName"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g., Monthly Bills"
-              disabled={isLoading}
-              required
-              autoFocus
-            />
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="groupName">Group Name</Label>
+              <Input
+                id="groupName"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g., Monthly Bills"
+                disabled={isLoading}
+                required
+                autoFocus
+              />
+            </div>
           </div>
 
-          <div className="modal-actions">
+          <DialogFooter className="mt-6 flex justify-between gap-2">
             {existingGroup && onDelete && (
-              <button
+              <Button
                 type="button"
-                className="delete-btn"
+                variant="outline"
+                className="border-destructive text-destructive hover:bg-destructive/10"
                 onClick={handleDelete}
                 disabled={isLoading}
               >
                 {isDeleting ? 'Deleting...' : 'Delete'}
-              </button>
+              </Button>
             )}
-            <div className="right-actions">
-              <button type="button" className="cancel-btn" onClick={onClose} disabled={isLoading}>
+            <div className="flex gap-2 ml-auto">
+              <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
                 Cancel
-              </button>
-              <button type="submit" className="save-btn" disabled={isLoading}>
+              </Button>
+              <Button type="submit" disabled={isLoading}>
                 {isSubmitting ? 'Saving...' : existingGroup ? 'Update' : 'Create'}
-              </button>
+              </Button>
             </div>
-          </div>
+          </DialogFooter>
         </form>
-
-        <style>{`
-          .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-          }
-
-          .modal-content {
-            background: white;
-            border-radius: 8px;
-            width: 100%;
-            max-width: 420px;
-            max-height: 90vh;
-            overflow-y: auto;
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
-          }
-
-          .modal-header {
-            display: flex;
-            align-items: center;
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid #eee;
-          }
-
-          .modal-header h2 {
-            margin: 0;
-            font-size: 1.25rem;
-            font-weight: 600;
-          }
-
-          .close-btn {
-            margin-left: auto;
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: #666;
-            padding: 0.25rem 0.5rem;
-          }
-
-          .close-btn:hover {
-            color: #333;
-          }
-
-          form {
-            padding: 1.5rem;
-          }
-
-          .error-message {
-            background: #fee;
-            color: #c00;
-            padding: 0.75rem 1rem;
-            border-radius: 4px;
-            margin-bottom: 1rem;
-            font-size: 0.875rem;
-          }
-
-          .form-group {
-            margin-bottom: 1.5rem;
-          }
-
-          .form-group > label {
-            display: block;
-            font-weight: 500;
-            margin-bottom: 0.5rem;
-            color: #333;
-          }
-
-          .form-group input {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 1rem;
-            box-sizing: border-box;
-          }
-
-          .form-group input:focus {
-            border-color: #0066cc;
-            outline: none;
-            box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
-          }
-
-          .modal-actions {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 1.5rem;
-            padding-top: 1rem;
-            border-top: 1px solid #eee;
-          }
-
-          .right-actions {
-            display: flex;
-            gap: 0.75rem;
-            margin-left: auto;
-          }
-
-          .cancel-btn,
-          .save-btn,
-          .delete-btn {
-            padding: 0.75rem 1.5rem;
-            border-radius: 4px;
-            font-size: 0.875rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.15s ease;
-          }
-
-          .cancel-btn {
-            background: white;
-            border: 1px solid #ccc;
-            color: #666;
-          }
-
-          .cancel-btn:hover:not(:disabled) {
-            background: #f5f5f5;
-          }
-
-          .save-btn {
-            background: #0066cc;
-            border: none;
-            color: white;
-          }
-
-          .save-btn:hover:not(:disabled) {
-            background: #0052a3;
-          }
-
-          .delete-btn {
-            background: white;
-            border: 1px solid #c00;
-            color: #c00;
-          }
-
-          .delete-btn:hover:not(:disabled) {
-            background: #fee;
-          }
-
-          button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-          }
-        `}</style>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 

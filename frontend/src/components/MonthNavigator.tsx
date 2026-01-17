@@ -4,6 +4,9 @@
  * Allows navigation between budget months.
  */
 
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+
 interface MonthNavigatorProps {
   /** Current month in YYYY-MM format */
   month: string
@@ -61,51 +64,26 @@ function getNextMonth(monthStr: string): string {
 
 export function MonthNavigator({ month, onMonthChange }: MonthNavigatorProps) {
   return (
-    <div className="month-navigator">
-      <button
-        className="nav-button"
+    <div className="flex items-center gap-4">
+      <Button
+        variant="outline"
+        size="icon"
         onClick={() => onMonthChange(getPreviousMonth(month))}
         aria-label="Previous month"
       >
-        ‹
-      </button>
-      <span className="month-display">{getMonthDisplayName(month)}</span>
-      <button
-        className="nav-button"
+        <ChevronLeft className="h-5 w-5" />
+      </Button>
+      <span className="text-xl font-semibold min-w-[180px] text-center">
+        {getMonthDisplayName(month)}
+      </span>
+      <Button
+        variant="outline"
+        size="icon"
         onClick={() => onMonthChange(getNextMonth(month))}
         aria-label="Next month"
       >
-        ›
-      </button>
-
-      <style>{`
-        .month-navigator {
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-        }
-
-        .nav-button {
-          background: none;
-          border: 1px solid #ccc;
-          border-radius: 4px;
-          padding: 0.5rem 1rem;
-          font-size: 1.25rem;
-          cursor: pointer;
-          color: #333;
-        }
-
-        .nav-button:hover {
-          background-color: #f0f0f0;
-        }
-
-        .month-display {
-          font-size: 1.25rem;
-          font-weight: 600;
-          min-width: 180px;
-          text-align: center;
-        }
-      `}</style>
+        <ChevronRight className="h-5 w-5" />
+      </Button>
     </div>
   )
 }

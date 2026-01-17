@@ -7,6 +7,7 @@
  */
 
 import { useState, useRef, type ChangeEvent } from 'react'
+import { Button } from '@/components/ui/button'
 
 interface CSVImportProps {
   accountId: string
@@ -60,24 +61,20 @@ export function CSVImport({ accountId, onImportComplete }: CSVImportProps) {
   }
 
   return (
-    <div className="csv-import">
+    <div className="inline-flex flex-col items-end gap-1">
       <input
         type="file"
         ref={fileInputRef}
         onChange={handleFileChange}
         accept=".csv"
-        style={{ display: 'none' }}
+        className="hidden"
         aria-label="Upload CSV file"
       />
-      <button
-        onClick={handleButtonClick}
-        disabled={isUploading}
-        className="import-button"
-      >
+      <Button variant="outline" onClick={handleButtonClick} disabled={isUploading}>
         {isUploading ? 'Uploading...' : 'Import CSV'}
-      </button>
-      {error && <p className="error-message">{error}</p>}
-      {success && <p className="success-message">{success}</p>}
+      </Button>
+      {error && <p className="text-sm text-destructive">{error}</p>}
+      {success && <p className="text-sm text-green-600">{success}</p>}
     </div>
   )
 }

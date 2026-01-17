@@ -8,21 +8,9 @@ import { BudgetMonthView } from '@/components/BudgetMonthView'
 
 export function BudgetPage() {
   return (
-    <div className="budget-page">
-      <h1>Budget</h1>
+    <div className="p-4">
+      <h1 className="text-2xl font-bold text-foreground mb-6">Budget</h1>
       <BudgetMonthView />
-
-      <style>{`
-        .budget-page {
-          padding: 1rem;
-        }
-
-        .budget-page h1 {
-          margin: 0 0 1.5rem;
-          font-size: 1.75rem;
-          color: #333;
-        }
-      `}</style>
     </div>
   )
 }

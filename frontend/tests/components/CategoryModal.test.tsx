@@ -88,26 +88,36 @@ describe('CategoryModal', () => {
       expect(screen.getByPlaceholderText('e.g., Rent, Groceries')).toBeInTheDocument()
     })
 
-    it('should display group selector with all groups', () => {
+    it('should display group selector with all groups', async () => {
+      const user = userEvent.setup()
       render(<CategoryModal {...defaultProps} />)
 
-      expect(screen.getByLabelText('Category Group')).toBeInTheDocument()
-      expect(screen.getByRole('option', { name: 'Monthly Bills' })).toBeInTheDocument()
-      expect(screen.getByRole('option', { name: 'Savings' })).toBeInTheDocument()
+      // shadcn Select renders as combobox
+      const groupSelect = screen.getByRole('combobox')
+      expect(groupSelect).toBeInTheDocument()
+
+      // Open the dropdown to see options
+      await user.click(groupSelect)
+
+      await waitFor(() => {
+        expect(screen.getByRole('option', { name: 'Monthly Bills' })).toBeInTheDocument()
+        expect(screen.getByRole('option', { name: 'Savings' })).toBeInTheDocument()
+      })
     })
 
     it('should pre-select defaultGroupId', () => {
       render(<CategoryModal {...defaultProps} />)
 
-      const select = screen.getByLabelText('Category Group') as HTMLSelectElement
-      expect(select.value).toBe('group-1')
+      // shadcn Select shows the selected value in the combobox trigger
+      const combobox = screen.getByRole('combobox')
+      expect(combobox).toHaveTextContent('Monthly Bills')
     })
 
     it('should call onClose when close button is clicked', async () => {
       const user = userEvent.setup()
       render(<CategoryModal {...defaultProps} />)
 
-      await user.click(screen.getByLabelText('Close'))
+      await user.click(screen.getByRole('button', { name: 'Close' }))
 
       expect(defaultProps.onClose).toHaveBeenCalled()
     })
@@ -150,9 +160,14 @@ describe('CategoryModal', () => {
 
       render(<CategoryModal {...defaultProps} />)
 
-      // Select a different group
-      const groupSelect = screen.getByLabelText('Category Group')
-      await user.selectOptions(groupSelect, 'group-2')
+      // Select a different group using shadcn Select (combobox)
+      const groupSelect = screen.getByRole('combobox')
+      await user.click(groupSelect)
+
+      await waitFor(() => {
+        expect(screen.getByRole('option', { name: 'Savings' })).toBeInTheDocument()
+      })
+      await user.click(screen.getByRole('option', { name: 'Savings' }))
 
       const nameInput = screen.getByLabelText('Category Name')
       await user.type(nameInput, 'Emergency Fund')
@@ -221,8 +236,9 @@ describe('CategoryModal', () => {
     it('should pre-select existing category group', () => {
       render(<CategoryModal {...editProps} />)
 
-      const select = screen.getByLabelText('Category Group') as HTMLSelectElement
-      expect(select.value).toBe('group-1')
+      // shadcn Select shows the selected value in the combobox trigger
+      const combobox = screen.getByRole('combobox')
+      expect(combobox).toHaveTextContent('Monthly Bills')
     })
 
     it('should show delete button when editing', () => {
@@ -268,8 +284,14 @@ describe('CategoryModal', () => {
 
       render(<CategoryModal {...editProps} />)
 
-      const groupSelect = screen.getByLabelText('Category Group')
-      await user.selectOptions(groupSelect, 'group-2')
+      // Select a different group using shadcn Select (combobox)
+      const groupSelect = screen.getByRole('combobox')
+      await user.click(groupSelect)
+
+      await waitFor(() => {
+        expect(screen.getByRole('option', { name: 'Savings' })).toBeInTheDocument()
+      })
+      await user.click(screen.getByRole('option', { name: 'Savings' }))
 
       await user.click(screen.getByText('Update'))
 

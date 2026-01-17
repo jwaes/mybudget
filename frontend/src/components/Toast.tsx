@@ -5,6 +5,8 @@
  */
 
 import { useState, useEffect, createContext, useContext, useCallback, type ReactNode } from 'react'
+import { X } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning'
 
@@ -68,23 +70,10 @@ interface ToastContainerProps {
 
 function ToastContainer({ toasts, onRemove }: ToastContainerProps) {
   return (
-    <div className="toast-container">
+    <div className="fixed bottom-4 right-4 flex flex-col gap-2 z-[2000] pointer-events-none">
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onRemove={onRemove} />
       ))}
-
-      <style>{`
-        .toast-container {
-          position: fixed;
-          bottom: 1rem;
-          right: 1rem;
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-          z-index: 2000;
-          pointer-events: none;
-        }
-      `}</style>
     </div>
   )
 }
@@ -92,6 +81,13 @@ function ToastContainer({ toasts, onRemove }: ToastContainerProps) {
 interface ToastItemProps {
   toast: Toast
   onRemove: (id: string) => void
+}
+
+const toastStyles: Record<ToastType, string> = {
+  success: 'bg-green-600 text-white',
+  error: 'bg-destructive text-destructive-foreground',
+  info: 'bg-primary text-primary-foreground',
+  warning: 'bg-amber-500 text-white',
 }
 
 function ToastItem({ toast, onRemove }: ToastItemProps) {
@@ -112,93 +108,21 @@ function ToastItem({ toast, onRemove }: ToastItemProps) {
   }
 
   return (
-    <div className={`toast toast-${toast.type} ${isExiting ? 'toast-exit' : ''}`}>
-      <span className="toast-message">{toast.message}</span>
-      <button className="toast-close" onClick={handleClose} aria-label="Close">
-        &times;
+    <div
+      className={cn(
+        'flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg pointer-events-auto min-w-[250px] max-w-[400px] transition-all duration-300',
+        toastStyles[toast.type],
+        isExiting ? 'translate-x-full opacity-0' : 'translate-x-0 opacity-100 animate-in slide-in-from-right-full'
+      )}
+    >
+      <span className="flex-1 text-sm font-medium">{toast.message}</span>
+      <button
+        className="p-0 bg-transparent border-none text-inherit cursor-pointer opacity-80 hover:opacity-100 transition-opacity"
+        onClick={handleClose}
+        aria-label="Close"
+      >
+        <X className="h-4 w-4" />
       </button>
-
-      <style>{`
-        .toast {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          padding: 0.75rem 1rem;
-          border-radius: 8px;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-          pointer-events: auto;
-          animation: slideIn 0.3s ease;
-          min-width: 250px;
-          max-width: 400px;
-        }
-
-        .toast-exit {
-          animation: slideOut 0.3s ease forwards;
-        }
-
-        .toast-success {
-          background: #22a722;
-          color: white;
-        }
-
-        .toast-error {
-          background: #c00;
-          color: white;
-        }
-
-        .toast-info {
-          background: #0066cc;
-          color: white;
-        }
-
-        .toast-warning {
-          background: #f59e0b;
-          color: white;
-        }
-
-        .toast-message {
-          flex: 1;
-          font-size: 0.875rem;
-          font-weight: 500;
-        }
-
-        .toast-close {
-          background: none;
-          border: none;
-          color: inherit;
-          font-size: 1.25rem;
-          cursor: pointer;
-          padding: 0;
-          line-height: 1;
-          opacity: 0.8;
-        }
-
-        .toast-close:hover {
-          opacity: 1;
-        }
-
-        @keyframes slideIn {
-          from {
-            transform: translateX(100%);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
-        }
-
-        @keyframes slideOut {
-          from {
-            transform: translateX(0);
-            opacity: 1;
-          }
-          to {
-            transform: translateX(100%);
-            opacity: 0;
-          }
-        }
-      `}</style>
     </div>
   )
 }

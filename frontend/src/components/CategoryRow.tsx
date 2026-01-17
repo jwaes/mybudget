@@ -10,8 +10,11 @@ import { useState, useRef, useEffect, type KeyboardEvent } from 'react'
 import type { CategoryBudget } from '@/types/budget'
 import type { CategoryTarget, UnderfundedResponse } from '@/types/target'
 import type { Category } from '@/types/category'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { TargetBadge } from './TargetBadge'
 import { TargetModal } from './TargetModal'
+import { cn } from '@/lib/utils'
 
 interface CategoryRowProps {
   category: CategoryBudget
@@ -41,9 +44,9 @@ function formatAmount(amount: string): string {
  */
 function getAvailableClass(available: string): string {
   const num = parseFloat(available)
-  if (num < 0) return 'negative'
-  if (num > 0) return 'positive'
-  return 'zero'
+  if (num < 0) return 'text-destructive font-medium'
+  if (num > 0) return 'text-green-600 font-medium'
+  return 'text-muted-foreground'
 }
 
 export function CategoryRow({
@@ -163,16 +166,16 @@ export function CategoryRow({
   }
 
   return (
-    <div className="category-row">
-      <div className="category-info">
+    <div className="flex justify-between items-center py-3 px-4 bg-background border-b last:border-b-0">
+      <div className="flex items-center gap-3">
         <button
-          className="category-name-button"
+          className="font-normal text-foreground bg-transparent border-0 cursor-pointer py-1 px-2 -my-1 -mx-2 rounded transition-colors hover:bg-muted"
           onClick={handleEditCategory}
           title="Click to edit category"
         >
           {category.name}
         </button>
-        <div className="category-target">
+        <div className="flex items-center">
           {target ? (
             <>
               <TargetBadge
@@ -181,8 +184,10 @@ export function CategoryRow({
                 onClick={() => setShowTargetModal(true)}
               />
               {hasUnderfunded && onFundUnderfunded && (
-                <button
-                  className="fund-category-btn"
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="ml-2 h-6 px-2 text-xs font-medium uppercase"
                   onClick={handleFundUnderfunded}
                   disabled={isFunding || !canFund}
                   title={
@@ -192,12 +197,12 @@ export function CategoryRow({
                   }
                 >
                   {isFunding ? '...' : 'Fund'}
-                </button>
+                </Button>
               )}
             </>
           ) : (
             <button
-              className="set-target-btn"
+              className="py-0.5 px-2 border border-dashed border-muted-foreground/40 rounded-full bg-transparent text-muted-foreground text-[11px] font-medium uppercase cursor-pointer transition-all hover:border-primary hover:text-primary hover:bg-primary/5"
               onClick={() => setShowTargetModal(true)}
               title="Set target"
             >
@@ -206,10 +211,13 @@ export function CategoryRow({
           )}
         </div>
       </div>
-      <div className="category-amounts">
-        <span className="funded" onClick={handleStartEdit}>
+      <div className="flex gap-8 text-right">
+        <span
+          className="min-w-[100px] text-right tabular-nums cursor-pointer py-1 px-2 -my-1 -mx-2 rounded hover:bg-muted"
+          onClick={handleStartEdit}
+        >
           {isEditing ? (
-            <input
+            <Input
               ref={inputRef}
               type="text"
               value={editValue}
@@ -217,14 +225,16 @@ export function CategoryRow({
               onKeyDown={handleKeyDown}
               onBlur={handleSubmit}
               disabled={isSubmitting}
-              className="funded-input"
+              className="w-[100px] text-right tabular-nums h-7 px-2"
             />
           ) : (
             formatAmount(category.funded_this_month)
           )}
         </span>
-        <span className="activity">{formatAmount(category.activity)}</span>
-        <span className={`available ${getAvailableClass(category.available)}`}>
+        <span className="min-w-[100px] text-right tabular-nums text-muted-foreground">
+          {formatAmount(category.activity)}
+        </span>
+        <span className={cn('min-w-[100px] text-right tabular-nums', getAvailableClass(category.available))}>
           {formatAmount(category.available)}
         </span>
       </div>
@@ -238,147 +248,6 @@ export function CategoryRow({
         onSave={handleTargetSave}
         onDelete={handleTargetDelete}
       />
-
-      <style>{`
-        .category-row {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 0.75rem 1rem;
-          background: white;
-          border-bottom: 1px solid #eee;
-        }
-
-        .category-row:last-child {
-          border-bottom: none;
-        }
-
-        .category-info {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-        }
-
-        .category-name-button {
-          font-weight: 400;
-          color: #333;
-          background: none;
-          border: none;
-          cursor: pointer;
-          padding: 0.25rem 0.5rem;
-          margin: -0.25rem -0.5rem;
-          border-radius: 4px;
-          font-size: inherit;
-          font-family: inherit;
-          text-align: left;
-          transition: background-color 0.15s;
-        }
-
-        .category-name-button:hover {
-          background-color: rgba(0, 0, 0, 0.05);
-        }
-
-        .category-target {
-          display: flex;
-          align-items: center;
-        }
-
-        .set-target-btn {
-          padding: 0.125rem 0.5rem;
-          border: 1px dashed #ccc;
-          border-radius: 12px;
-          background: none;
-          color: #999;
-          font-size: 0.6875rem;
-          font-weight: 500;
-          text-transform: uppercase;
-          cursor: pointer;
-          transition: all 0.15s ease;
-        }
-
-        .set-target-btn:hover {
-          border-color: #0066cc;
-          color: #0066cc;
-          background: #f0f7ff;
-        }
-
-        .fund-category-btn {
-          margin-left: 0.5rem;
-          padding: 0.125rem 0.5rem;
-          border: none;
-          border-radius: 4px;
-          background-color: #0066cc;
-          color: white;
-          font-size: 0.6875rem;
-          font-weight: 500;
-          text-transform: uppercase;
-          cursor: pointer;
-          transition: background-color 0.15s ease;
-        }
-
-        .fund-category-btn:hover:not(:disabled) {
-          background-color: #0055aa;
-        }
-
-        .fund-category-btn:disabled {
-          background-color: #ccc;
-          cursor: not-allowed;
-        }
-
-        .category-amounts {
-          display: flex;
-          gap: 2rem;
-          text-align: right;
-        }
-
-        .funded,
-        .activity,
-        .available {
-          min-width: 100px;
-          text-align: right;
-          font-variant-numeric: tabular-nums;
-        }
-
-        .funded {
-          cursor: pointer;
-          padding: 0.25rem 0.5rem;
-          margin: -0.25rem -0.5rem;
-          border-radius: 4px;
-        }
-
-        .funded:hover {
-          background-color: #f0f0f0;
-        }
-
-        .funded-input {
-          width: 100px;
-          text-align: right;
-          padding: 0.25rem 0.5rem;
-          border: 1px solid #0066cc;
-          border-radius: 4px;
-          font-size: inherit;
-          font-family: inherit;
-          font-variant-numeric: tabular-nums;
-        }
-
-        .activity {
-          color: #666;
-        }
-
-        .available.positive {
-          color: #22a722;
-          font-weight: 500;
-        }
-
-        .available.negative {
-          color: #c00;
-          font-weight: 500;
-        }
-
-        .available.zero {
-          color: #666;
-        }
-      `}</style>
     </div>
   )
 }

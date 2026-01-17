@@ -12,6 +12,26 @@ import { transactionService } from '@/services/transactionService'
 import { accountService } from '@/services/accountService'
 import type { Transaction } from '@/types/transaction'
 import type { Account } from '@/types/account'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
 
 type TabType = 'inbox' | 'all'
 
@@ -76,6 +96,17 @@ export function TransactionsPage() {
     })
   }
 
+  function getStateBadgeVariant(state: string): 'default' | 'secondary' | 'outline' {
+    switch (state) {
+      case 'CLEARED':
+        return 'default'
+      case 'APPROVED':
+        return 'secondary'
+      default:
+        return 'outline'
+    }
+  }
+
   function getStateLabel(state: string): string {
     switch (state) {
       case 'INBOX':
@@ -90,57 +121,53 @@ export function TransactionsPage() {
   }
 
   return (
-    <div className="transactions-page">
-      <header className="page-header">
-        <h1>Transactions</h1>
-        <div className="header-actions">
-          <button
-            className="add-transaction-btn"
-            onClick={() => setIsAddModalOpen(true)}
-          >
-            + Add Transaction
-          </button>
+    <div className="p-4">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-foreground">Transactions</h1>
+        <div className="flex items-center gap-3">
+          <Button onClick={() => setIsAddModalOpen(true)}>+ Add Transaction</Button>
           {selectedAccountId && (
-            <CSVImport
-              accountId={selectedAccountId}
-              onImportComplete={loadData}
-            />
+            <CSVImport accountId={selectedAccountId} onImportComplete={loadData} />
           )}
-        </div>
-      </header>
-
-      <div className="filters">
-        <div className="account-filter">
-          <label htmlFor="accountFilter">Account:</label>
-          <select
-            id="accountFilter"
-            value={selectedAccountId || ''}
-            onChange={(e) => setSelectedAccountId(e.target.value || undefined)}
-          >
-            <option value="">All Accounts</option>
-            {accounts.map((account) => (
-              <option key={account.id} value={account.id}>
-                {account.name}
-              </option>
-            ))}
-          </select>
         </div>
       </div>
 
-      <nav className="tabs">
-        <button
-          className={`tab ${activeTab === 'inbox' ? 'active' : ''}`}
+      <div className="flex items-center gap-4 mb-6">
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium text-muted-foreground">Account:</label>
+          <Select
+            value={selectedAccountId || 'all'}
+            onValueChange={(value) => setSelectedAccountId(value === 'all' ? undefined : value)}
+          >
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="All Accounts" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Accounts</SelectItem>
+              {accounts.map((account) => (
+                <SelectItem key={account.id} value={account.id}>
+                  {account.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="flex gap-1 mb-6">
+        <Button
+          variant={activeTab === 'inbox' ? 'default' : 'ghost'}
           onClick={() => setActiveTab('inbox')}
         >
           Inbox
-        </button>
-        <button
-          className={`tab ${activeTab === 'all' ? 'active' : ''}`}
+        </Button>
+        <Button
+          variant={activeTab === 'all' ? 'default' : 'ghost'}
           onClick={() => setActiveTab('all')}
         >
           All Transactions
-        </button>
-      </nav>
+        </Button>
+      </div>
 
       {activeTab === 'inbox' && (
         <TransactionInbox
@@ -150,48 +177,70 @@ export function TransactionsPage() {
       )}
 
       {activeTab === 'all' && (
-        <div className="all-transactions">
-          {isLoading && <p>Loading transactions...</p>}
-          {error && <p className="error-message">{error}</p>}
+        <>
+          {isLoading && (
+            <Card className="p-6">
+              <div className="space-y-3">
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+              </div>
+            </Card>
+          )}
+          {error && (
+            <Card className="p-6 text-center">
+              <p className="text-destructive mb-4">Error: {error}</p>
+              <Button onClick={loadData}>Retry</Button>
+            </Card>
+          )}
           {!isLoading && !error && transactions.length === 0 && (
-            <p>No transactions found.</p>
+            <Card className="p-8 text-center text-muted-foreground">
+              <p>No transactions found.</p>
+            </Card>
           )}
           {!isLoading && !error && transactions.length > 0 && (
-            <table className="transactions-table">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Payee</th>
-                  <th>Amount</th>
-                  <th>State</th>
-                </tr>
-              </thead>
-              <tbody>
-                {transactions.map((tx) => (
-                  <tr key={tx.id}>
-                    <td>{formatDate(tx.date)}</td>
-                    <td>
-                      {tx.payee}
-                      {tx.memo && <span className="tx-memo">{tx.memo}</span>}
-                    </td>
-                    <td
-                      className={
-                        parseFloat(tx.amount) < 0 ? 'negative' : 'positive'
-                      }
-                    >
-                      {formatCurrency(tx.amount)}
-                    </td>
-                    <td>
-                      <span className={`state-badge state-${tx.state.toLowerCase()}`}>
-                        {getStateLabel(tx.state)}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <Card>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Payee</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead>State</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {transactions.map((tx) => (
+                    <TableRow key={tx.id}>
+                      <TableCell className="text-muted-foreground">
+                        {formatDate(tx.date)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium">{tx.payee}</div>
+                        {tx.memo && (
+                          <div className="text-sm text-muted-foreground">{tx.memo}</div>
+                        )}
+                      </TableCell>
+                      <TableCell
+                        className={cn(
+                          'text-right tabular-nums',
+                          parseFloat(tx.amount) < 0 ? 'text-destructive' : 'text-green-600'
+                        )}
+                      >
+                        {formatCurrency(tx.amount)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={getStateBadgeVariant(tx.state)}>
+                          {getStateLabel(tx.state)}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Card>
           )}
-        </div>
+        </>
       )}
 
       <AddTransactionModal

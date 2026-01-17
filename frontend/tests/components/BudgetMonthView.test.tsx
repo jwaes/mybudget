@@ -143,12 +143,13 @@ describe('BudgetMonthView', () => {
 
     renderWithProviders(<BudgetMonthView initialMonth="2026-01" />)
 
-    expect(screen.getByText('Loading budget...')).toBeInTheDocument()
+    // Skeleton loading shows animate-pulse class
+    expect(document.querySelector('[class*="animate-pulse"]')).toBeInTheDocument()
 
     // Resolve to avoid act warnings
     resolvePromise!(mockBudgetData)
     await waitFor(() => {
-      expect(screen.queryByText('Loading budget...')).not.toBeInTheDocument()
+      expect(document.querySelector('[class*="animate-pulse"]')).not.toBeInTheDocument()
     })
   })
 
@@ -156,7 +157,8 @@ describe('BudgetMonthView', () => {
     renderWithProviders(<BudgetMonthView initialMonth="2026-01" />)
 
     await waitFor(() => {
-      expect(screen.queryByText('Loading budget...')).not.toBeInTheDocument()
+      // Wait for skeleton loading to disappear
+      expect(document.querySelector('[class*="animate-pulse"]')).not.toBeInTheDocument()
     })
 
     // Check month is displayed
@@ -308,19 +310,20 @@ describe('CategoryRow', () => {
       expect(screen.getByText('Rent')).toBeInTheDocument()
     })
 
-    // Find the Rent row funded amount
-    const rentRow = screen.getByText('Rent').closest('.category-row')
-    expect(rentRow).toBeInTheDocument()
+    // Find the Rent category row (parent div containing the category name)
+    const rentNameButton = screen.getByText('Rent').closest('button')
+    const rentRow = rentNameButton?.parentElement?.parentElement
 
-    // Click on the funded amount for Rent (1,200.00)
-    const fundedCells = rentRow!.querySelectorAll('.funded')
-    expect(fundedCells.length).toBeGreaterThan(0)
-
-    await user.click(fundedCells[0])
+    // Click on the funded amount text (1,200.00) to start editing
+    // The funded amount is displayed as formatted text like "1,200.00"
+    const fundedAmount = screen.getByText('1,200.00')
+    await user.click(fundedAmount)
 
     // Should now show an input
-    const input = rentRow!.querySelector('input')
-    expect(input).toBeInTheDocument()
+    await waitFor(() => {
+      const input = rentRow?.querySelector('input')
+      expect(input).toBeInTheDocument()
+    })
   })
 
   it('should cancel editing when Escape is pressed', async () => {
@@ -332,19 +335,25 @@ describe('CategoryRow', () => {
       expect(screen.getByText('Rent')).toBeInTheDocument()
     })
 
-    const rentRow = screen.getByText('Rent').closest('.category-row')
-    const fundedCell = rentRow!.querySelector('.funded')
+    // Find the Rent category row
+    const rentNameButton = screen.getByText('Rent').closest('button')
+    const rentRow = rentNameButton?.parentElement?.parentElement
 
-    await user.click(fundedCell!)
+    // Click on the funded amount to start editing
+    const fundedAmount = screen.getByText('1,200.00')
+    await user.click(fundedAmount)
 
-    const input = rentRow!.querySelector('input')
-    expect(input).toBeInTheDocument()
+    // Verify input appears
+    await waitFor(() => {
+      const input = rentRow?.querySelector('input')
+      expect(input).toBeInTheDocument()
+    })
 
     await user.keyboard('{Escape}')
 
     // Input should no longer be visible
     await waitFor(() => {
-      expect(rentRow!.querySelector('input')).not.toBeInTheDocument()
+      expect(rentRow?.querySelector('input')).not.toBeInTheDocument()
     })
     expect(budgetService.assignFunds).not.toHaveBeenCalled()
   })

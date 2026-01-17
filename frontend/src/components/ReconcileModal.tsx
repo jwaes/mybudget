@@ -13,7 +13,17 @@ import { transactionService } from '@/services/transactionService'
 import { categoryService } from '@/services/categoryService'
 import type { Reconciliation } from '@/types/reconciliation'
 import type { Transaction } from '@/types/transaction'
-import type { CategoryGroup } from '@/types/category'
+import type { CategoryGroupWithCategories } from '@/types/category'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { cn } from '@/lib/utils'
 
 interface ReconcileModalProps {
   accountId: string
@@ -58,7 +68,7 @@ export function ReconcileModal({
   const [reconciliation, setReconciliation] = useState<Reconciliation | null>(null)
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [selectedTxIds, setSelectedTxIds] = useState<Set<string>>(new Set())
-  const [categoryGroups, setCategoryGroups] = useState<CategoryGroup[]>([])
+  const [categoryGroups, setCategoryGroups] = useState<CategoryGroupWithCategories[]>([])
   const [adjustmentCategoryId, setAdjustmentCategoryId] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -68,7 +78,8 @@ export function ReconcileModal({
     if (isOpen) {
       setStep('start')
       setStatementBalance('')
-      setStatementDate(new Date().toISOString().split('T')[0])
+      const today = new Date().toISOString()
+      setStatementDate(today.split('T')[0] ?? today.substring(0, 10))
       setReconciliation(null)
       setTransactions([])
       setSelectedTxIds(new Set())
@@ -115,18 +126,18 @@ export function ReconcileModal({
 
   const fetchCategoryGroups = async () => {
     try {
-      const groups = await categoryService.listGroups()
-      setCategoryGroups(groups)
+      const response = await categoryService.list()
+      setCategoryGroups(response.groups)
       // Set default category if available
-      if (groups.length > 0 && groups[0].categories && groups[0].categories.length > 0) {
-        setAdjustmentCategoryId(groups[0].categories[0].id)
+      const firstGroup = response.groups[0]
+      const firstCategory = firstGroup?.categories[0]
+      if (firstCategory) {
+        setAdjustmentCategoryId(firstCategory.id)
       }
     } catch (err) {
       // Non-critical, just for adjustment dropdown
     }
   }
-
-  if (!isOpen) return null
 
   const handleStartReconciliation = async (e: FormEvent) => {
     e.preventDefault()
@@ -167,7 +178,6 @@ export function ReconcileModal({
 
     try {
       if (isCurrentlySelected) {
-        // Unmark as cleared
         const response = await reconciliationService.unmarkCleared(reconciliation.id, {
           transaction_ids: [txId],
         })
@@ -176,7 +186,6 @@ export function ReconcileModal({
           next.delete(txId)
           return next
         })
-        // Update reconciliation balances
         setReconciliation((prev) =>
           prev
             ? {
@@ -187,12 +196,10 @@ export function ReconcileModal({
             : null
         )
       } else {
-        // Mark as cleared
         const response = await reconciliationService.markCleared(reconciliation.id, {
           transaction_ids: [txId],
         })
         setSelectedTxIds((prev) => new Set(prev).add(txId))
-        // Update reconciliation balances
         setReconciliation((prev) =>
           prev
             ? {
@@ -287,7 +294,6 @@ export function ReconcileModal({
       await reconciliationService.createAdjustment(reconciliation.id, {
         category_id: adjustmentCategoryId,
       })
-      // Refresh reconciliation to get updated balances
       const updated = await reconciliationService.get(reconciliation.id)
       setReconciliation(updated)
     } catch (err) {
@@ -310,7 +316,6 @@ export function ReconcileModal({
     try {
       await reconciliationService.complete(reconciliation.id)
       onComplete()
-      onClose()
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message)
@@ -326,698 +331,369 @@ export function ReconcileModal({
     if (reconciliation) {
       try {
         await reconciliationService.cancel(reconciliation.id)
-      } catch {
+      } catch (err) {
         // Ignore cancellation errors
       }
     }
     onClose()
   }
 
-  const discrepancy = reconciliation ? parseFloat(reconciliation.discrepancy) : 0
-  const isBalanced = Math.abs(discrepancy) < 0.01
-
+  // Step 1: Enter statement balance
   const renderStartStep = () => (
-    <form onSubmit={handleStartReconciliation}>
-      {error && <div className="error-message">{error}</div>}
-
-      <p className="info-text">
-        Enter the ending balance and date from your bank statement to begin reconciling.
+    <form onSubmit={handleStartReconciliation} className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        Enter your bank statement balance and date to begin reconciliation.
       </p>
 
-      <div className="form-group">
-        <label htmlFor="statementBalance">Statement Balance</label>
-        <div className="amount-input-wrapper">
-          <span className="currency-symbol">$</span>
-          <input
+      {error && (
+        <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
+
+      <div className="space-y-2">
+        <label htmlFor="statementBalance" className="text-sm font-medium">
+          Statement Balance
+        </label>
+        <div className="flex items-center rounded-md border">
+          <span className="px-3 text-muted-foreground">$</span>
+          <Input
             id="statementBalance"
             type="number"
             step="0.01"
             value={statementBalance}
             onChange={(e) => setStatementBalance(e.target.value)}
             placeholder="0.00"
+            className="border-0 focus-visible:ring-0"
             disabled={isSubmitting}
             required
-            autoFocus
           />
         </div>
       </div>
 
-      <div className="form-group">
-        <label htmlFor="statementDate">Statement Date</label>
-        <input
+      <div className="space-y-2">
+        <label htmlFor="statementDate" className="text-sm font-medium">
+          Statement Date
+        </label>
+        <Input
           id="statementDate"
           type="date"
           value={statementDate}
           onChange={(e) => setStatementDate(e.target.value)}
-          max={new Date().toISOString().split('T')[0]}
           disabled={isSubmitting}
           required
         />
       </div>
 
-      <div className="account-info">
-        <span>Current Balance:</span>
-        <span className="balance">${formatAmount(accountBalance)}</span>
+      <div className="rounded-md bg-muted p-3">
+        <div className="text-sm text-muted-foreground">Current Account Balance</div>
+        <div className="text-lg font-semibold">${formatAmount(accountBalance)}</div>
       </div>
 
-      <div className="modal-actions">
-        <button type="button" className="cancel-btn" onClick={handleCancel} disabled={isSubmitting}>
+      <div className="flex justify-end gap-2 pt-4">
+        <Button type="button" variant="outline" onClick={handleCancel} disabled={isSubmitting}>
           Cancel
-        </button>
-        <button type="submit" className="primary-btn" disabled={isSubmitting}>
+        </Button>
+        <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? 'Starting...' : 'Start Reconciliation'}
-        </button>
+        </Button>
       </div>
     </form>
   )
 
+  // Step 2: Select transactions
   const renderTransactionsStep = () => (
-    <div className="transactions-step">
-      {error && <div className="error-message">{error}</div>}
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        Select the transactions that appear on your statement.
+      </p>
 
-      <div className="balance-summary">
-        <div className="balance-row">
-          <span>Statement Balance:</span>
-          <span>${formatAmount(reconciliation?.statement_balance || '0')}</span>
+      {error && (
+        <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">
+          {error}
         </div>
-        <div className="balance-row">
-          <span>Cleared Balance:</span>
-          <span>${formatAmount(reconciliation?.cleared_balance || '0')}</span>
-        </div>
-        <div className={`balance-row discrepancy ${isBalanced ? 'balanced' : 'unbalanced'}`}>
-          <span>Difference:</span>
-          <span>${formatAmount(reconciliation?.discrepancy || '0')}</span>
-        </div>
-      </div>
+      )}
 
-      <div className="transactions-header">
-        <span>{transactions.length} transactions</span>
-        <div className="bulk-actions">
-          <button
-            type="button"
-            className="link-btn"
-            onClick={handleSelectAll}
-            disabled={isSubmitting}
-          >
-            Select All
-          </button>
-          <button
-            type="button"
-            className="link-btn"
-            onClick={handleClearAll}
-            disabled={isSubmitting}
-          >
-            Clear All
-          </button>
-        </div>
-      </div>
-
-      <div className="transactions-list">
-        {transactions.length === 0 ? (
-          <p className="no-transactions">No approved transactions to reconcile.</p>
-        ) : (
-          transactions.map((tx) => (
-            <label
-              key={tx.id}
-              className={`transaction-row ${selectedTxIds.has(tx.id) ? 'selected' : ''}`}
+      {reconciliation && (
+        <div className="grid grid-cols-3 gap-4 rounded-md bg-muted p-3 text-sm">
+          <div>
+            <div className="text-muted-foreground">Statement</div>
+            <div className="font-semibold">${formatAmount(reconciliation.statement_balance)}</div>
+          </div>
+          <div>
+            <div className="text-muted-foreground">Cleared</div>
+            <div className="font-semibold">${formatAmount(reconciliation.cleared_balance)}</div>
+          </div>
+          <div>
+            <div className="text-muted-foreground">Difference</div>
+            <div
+              className={cn(
+                'font-semibold',
+                parseFloat(reconciliation.discrepancy) === 0
+                  ? 'text-green-600'
+                  : 'text-destructive'
+              )}
             >
-              <input
-                type="checkbox"
-                checked={selectedTxIds.has(tx.id)}
-                onChange={() => handleToggleTransaction(tx.id)}
-                disabled={isSubmitting}
-              />
-              <span className="tx-date">{formatDate(tx.date)}</span>
-              <span className="tx-payee">{tx.payee}</span>
-              <span className={`tx-amount ${parseFloat(tx.amount) < 0 ? 'negative' : 'positive'}`}>
-                ${formatAmount(tx.amount)}
-              </span>
-            </label>
-          ))
-        )}
-      </div>
-
-      <div className="modal-actions">
-        <button type="button" className="cancel-btn" onClick={handleCancel} disabled={isSubmitting}>
-          Cancel
-        </button>
-        <button
-          type="button"
-          className="primary-btn"
-          onClick={() => setStep('review')}
-          disabled={isSubmitting}
-        >
-          Continue
-        </button>
-      </div>
-    </div>
-  )
-
-  const renderReviewStep = () => (
-    <div className="review-step">
-      {error && <div className="error-message">{error}</div>}
-
-      <div className="balance-summary large">
-        <div className="balance-row">
-          <span>Statement Balance:</span>
-          <span>${formatAmount(reconciliation?.statement_balance || '0')}</span>
-        </div>
-        <div className="balance-row">
-          <span>Cleared Balance:</span>
-          <span>${formatAmount(reconciliation?.cleared_balance || '0')}</span>
-        </div>
-        <div className={`balance-row discrepancy ${isBalanced ? 'balanced' : 'unbalanced'}`}>
-          <span>Difference:</span>
-          <span className="discrepancy-amount">
-            ${formatAmount(reconciliation?.discrepancy || '0')}
-          </span>
-        </div>
-      </div>
-
-      {isBalanced ? (
-        <div className="status-message success">
-          Your account is balanced! Click "Complete" to finish reconciliation.
-        </div>
-      ) : (
-        <div className="adjustment-section">
-          <p className="status-message warning">
-            There is a ${formatAmount(Math.abs(discrepancy).toString())} difference. You can:
-          </p>
-          <ul className="options-list">
-            <li>Go back and mark more transactions as cleared</li>
-            <li>Create an adjustment transaction to balance</li>
-          </ul>
-
-          <div className="adjustment-form">
-            <label htmlFor="adjustmentCategory">Adjustment Category</label>
-            <select
-              id="adjustmentCategory"
-              value={adjustmentCategoryId}
-              onChange={(e) => setAdjustmentCategoryId(e.target.value)}
-              disabled={isSubmitting}
-            >
-              {categoryGroups.map((group) => (
-                <optgroup key={group.id} label={group.name}>
-                  {group.categories?.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
-            <button
-              type="button"
-              className="secondary-btn"
-              onClick={handleCreateAdjustment}
-              disabled={isSubmitting || !adjustmentCategoryId}
-            >
-              {isSubmitting ? 'Creating...' : 'Create Adjustment'}
-            </button>
+              ${formatAmount(reconciliation.discrepancy)}
+            </div>
           </div>
         </div>
       )}
 
-      <div className="modal-actions">
-        <button
+      <div className="flex gap-2">
+        <Button
           type="button"
-          className="back-btn"
-          onClick={() => setStep('transactions')}
+          variant="outline"
+          size="sm"
+          onClick={handleSelectAll}
+          disabled={isSubmitting}
+        >
+          Select All
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={handleClearAll}
+          disabled={isSubmitting}
+        >
+          Clear All
+        </Button>
+      </div>
+
+      <div className="max-h-64 overflow-y-auto rounded-md border">
+        {transactions.length === 0 ? (
+          <div className="p-4 text-center text-sm text-muted-foreground">
+            No transactions to reconcile
+          </div>
+        ) : (
+          <table className="w-full text-sm">
+            <thead className="border-b bg-muted/50">
+              <tr>
+                <th className="p-2 text-left font-medium"></th>
+                <th className="p-2 text-left font-medium">Date</th>
+                <th className="p-2 text-left font-medium">Payee</th>
+                <th className="p-2 text-right font-medium">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {transactions.map((tx) => (
+                <tr
+                  key={tx.id}
+                  className={cn(
+                    'cursor-pointer border-b hover:bg-muted/50',
+                    selectedTxIds.has(tx.id) && 'bg-primary/10'
+                  )}
+                  onClick={() => handleToggleTransaction(tx.id)}
+                >
+                  <td className="p-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedTxIds.has(tx.id)}
+                      onChange={() => {}}
+                      className="h-4 w-4 rounded border-gray-300"
+                    />
+                  </td>
+                  <td className="p-2">{formatDate(tx.date)}</td>
+                  <td className="p-2 max-w-[150px] truncate">{tx.payee}</td>
+                  <td
+                    className={cn(
+                      'p-2 text-right tabular-nums',
+                      parseFloat(tx.amount) < 0 ? 'text-destructive' : 'text-green-600'
+                    )}
+                  >
+                    ${formatAmount(tx.amount)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      <div className="flex justify-end gap-2 pt-4">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setStep('start')}
           disabled={isSubmitting}
         >
           Back
-        </button>
-        <div className="right-actions">
-          <button type="button" className="cancel-btn" onClick={handleCancel} disabled={isSubmitting}>
-            Cancel
-          </button>
-          <button
-            type="button"
-            className="primary-btn"
-            onClick={handleComplete}
-            disabled={isSubmitting || !isBalanced}
-          >
-            {isSubmitting ? 'Completing...' : 'Complete'}
-          </button>
-        </div>
+        </Button>
+        <Button type="button" variant="outline" onClick={handleCancel} disabled={isSubmitting}>
+          Cancel
+        </Button>
+        <Button type="button" onClick={() => setStep('review')} disabled={isSubmitting}>
+          Continue
+        </Button>
       </div>
     </div>
   )
 
-  return (
-    <div className="modal-overlay" onClick={handleCancel}>
-      <div className="modal-content reconcile-modal" onClick={(e) => e.stopPropagation()}>
-        <header className="modal-header">
-          <h2>Reconcile Account</h2>
-          <span className="account-name-display">{accountName}</span>
-          <button className="close-btn" onClick={handleCancel} aria-label="Close">
-            &times;
-          </button>
-        </header>
+  // Step 3: Review and complete
+  const renderReviewStep = () => {
+    if (!reconciliation) return null
 
-        <div className="step-indicator">
-          <span className={`step ${step === 'start' ? 'active' : step !== 'start' ? 'complete' : ''}`}>
+    const discrepancy = parseFloat(reconciliation.discrepancy)
+    const isBalanced = discrepancy === 0
+
+    return (
+      <div className="space-y-4">
+        {error && (
+          <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">
+            {error}
+          </div>
+        )}
+
+        <div className="grid grid-cols-3 gap-4 rounded-md bg-muted p-3 text-sm">
+          <div>
+            <div className="text-muted-foreground">Statement</div>
+            <div className="font-semibold">${formatAmount(reconciliation.statement_balance)}</div>
+          </div>
+          <div>
+            <div className="text-muted-foreground">Cleared</div>
+            <div className="font-semibold">${formatAmount(reconciliation.cleared_balance)}</div>
+          </div>
+          <div>
+            <div className="text-muted-foreground">Difference</div>
+            <div
+              className={cn(
+                'font-semibold',
+                isBalanced ? 'text-green-600' : 'text-destructive'
+              )}
+            >
+              ${formatAmount(reconciliation.discrepancy)}
+            </div>
+          </div>
+        </div>
+
+        {isBalanced ? (
+          <div className="rounded-md bg-green-50 p-4 text-center text-green-700">
+            <p className="font-medium">Your account is balanced!</p>
+            <p className="text-sm">Click Complete to finish reconciliation.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="rounded-md bg-amber-50 p-4 text-amber-800">
+              <p className="font-medium">
+                There is a ${formatAmount(Math.abs(discrepancy).toString())} difference.
+              </p>
+              <p className="text-sm">You can go back and mark more transactions, or create an adjustment.</p>
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="adjustmentCategory" className="text-sm font-medium">
+                Adjustment Category
+              </label>
+              <select
+                id="adjustmentCategory"
+                value={adjustmentCategoryId}
+                onChange={(e) => setAdjustmentCategoryId(e.target.value)}
+                disabled={isSubmitting}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                {categoryGroups.map((group) => (
+                  <optgroup key={group.id} label={group.name}>
+                    {group.categories?.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={handleCreateAdjustment}
+                disabled={isSubmitting || !adjustmentCategoryId}
+                className="w-full"
+              >
+                {isSubmitting ? 'Creating...' : 'Create Adjustment'}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        <div className="flex justify-end gap-2 pt-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setStep('transactions')}
+            disabled={isSubmitting}
+          >
+            Back
+          </Button>
+          <Button type="button" variant="outline" onClick={handleCancel} disabled={isSubmitting}>
+            Cancel
+          </Button>
+          <Button type="button" onClick={handleComplete} disabled={isSubmitting || !isBalanced}>
+            {isSubmitting ? 'Completing...' : 'Complete'}
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && handleCancel()}>
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-3">
+            Reconcile Account
+            <span className="rounded bg-muted px-2 py-1 text-sm font-normal text-muted-foreground">
+              {accountName}
+            </span>
+          </DialogTitle>
+          <DialogDescription className="sr-only">
+            Reconcile your account with your bank statement
+          </DialogDescription>
+        </DialogHeader>
+
+        {/* Step indicator */}
+        <div className="flex gap-4 border-b pb-3">
+          <span
+            className={cn(
+              'rounded px-2 py-1 text-sm',
+              step === 'start'
+                ? 'bg-primary/10 font-medium text-primary'
+                : 'text-green-600'
+            )}
+          >
             1. Enter Balance
           </span>
-          <span className={`step ${step === 'transactions' ? 'active' : step === 'review' ? 'complete' : ''}`}>
+          <span
+            className={cn(
+              'rounded px-2 py-1 text-sm',
+              step === 'transactions'
+                ? 'bg-primary/10 font-medium text-primary'
+                : step === 'review'
+                  ? 'text-green-600'
+                  : 'text-muted-foreground'
+            )}
+          >
             2. Mark Cleared
           </span>
-          <span className={`step ${step === 'review' ? 'active' : ''}`}>
+          <span
+            className={cn(
+              'rounded px-2 py-1 text-sm',
+              step === 'review'
+                ? 'bg-primary/10 font-medium text-primary'
+                : 'text-muted-foreground'
+            )}
+          >
             3. Complete
           </span>
         </div>
 
-        <div className="modal-body">
+        {/* Step content */}
+        <div className="flex-1 overflow-y-auto py-4">
           {step === 'start' && renderStartStep()}
           {step === 'transactions' && renderTransactionsStep()}
           {step === 'review' && renderReviewStep()}
         </div>
-
-        <style>{`
-          .reconcile-modal {
-            max-width: 600px;
-            max-height: 85vh;
-            display: flex;
-            flex-direction: column;
-          }
-
-          .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-          }
-
-          .modal-content {
-            background: white;
-            border-radius: 8px;
-            width: 100%;
-            overflow: hidden;
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
-          }
-
-          .modal-header {
-            display: flex;
-            align-items: center;
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid #eee;
-            background: #f9f9f9;
-          }
-
-          .modal-header h2 {
-            margin: 0;
-            font-size: 1.25rem;
-            font-weight: 600;
-          }
-
-          .account-name-display {
-            margin-left: 1rem;
-            padding: 0.25rem 0.75rem;
-            background: #e8e8e8;
-            border-radius: 4px;
-            font-size: 0.875rem;
-            color: #555;
-          }
-
-          .close-btn {
-            margin-left: auto;
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: #666;
-            padding: 0.25rem 0.5rem;
-          }
-
-          .close-btn:hover {
-            color: #333;
-          }
-
-          .step-indicator {
-            display: flex;
-            border-bottom: 1px solid #eee;
-            padding: 0.75rem 1.5rem;
-            gap: 1rem;
-          }
-
-          .step {
-            font-size: 0.875rem;
-            color: #999;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-          }
-
-          .step.active {
-            color: #0066cc;
-            font-weight: 500;
-            background: #e6f0ff;
-          }
-
-          .step.complete {
-            color: #28a745;
-          }
-
-          .modal-body {
-            padding: 1.5rem;
-            overflow-y: auto;
-            flex: 1;
-          }
-
-          .info-text {
-            margin: 0 0 1.5rem;
-            color: #666;
-          }
-
-          .form-group {
-            margin-bottom: 1.25rem;
-          }
-
-          .form-group label {
-            display: block;
-            font-weight: 500;
-            margin-bottom: 0.5rem;
-            color: #333;
-          }
-
-          .amount-input-wrapper {
-            display: flex;
-            align-items: center;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            overflow: hidden;
-          }
-
-          .currency-symbol {
-            padding: 0.75rem;
-            background: #f5f5f5;
-            color: #666;
-            font-weight: 500;
-          }
-
-          .amount-input-wrapper input {
-            flex: 1;
-            padding: 0.75rem;
-            border: none;
-            font-size: 1rem;
-            outline: none;
-          }
-
-          .amount-input-wrapper:focus-within {
-            border-color: #0066cc;
-            box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
-          }
-
-          input[type="date"],
-          select {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 1rem;
-          }
-
-          input[type="date"]:focus,
-          select:focus {
-            border-color: #0066cc;
-            outline: none;
-            box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
-          }
-
-          .account-info {
-            display: flex;
-            justify-content: space-between;
-            padding: 1rem;
-            background: #f9f9f9;
-            border-radius: 4px;
-            margin-bottom: 1.5rem;
-          }
-
-          .account-info .balance {
-            font-weight: 600;
-          }
-
-          .error-message {
-            background: #fee;
-            color: #c00;
-            padding: 0.75rem 1rem;
-            border-radius: 4px;
-            margin-bottom: 1rem;
-            font-size: 0.875rem;
-          }
-
-          .modal-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 0.75rem;
-            margin-top: 1.5rem;
-            padding-top: 1rem;
-            border-top: 1px solid #eee;
-          }
-
-          .right-actions {
-            display: flex;
-            gap: 0.75rem;
-          }
-
-          .back-btn {
-            margin-right: auto;
-          }
-
-          .cancel-btn,
-          .primary-btn,
-          .secondary-btn,
-          .back-btn {
-            padding: 0.75rem 1.5rem;
-            border-radius: 4px;
-            font-size: 0.875rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.15s ease;
-          }
-
-          .cancel-btn,
-          .back-btn {
-            background: white;
-            border: 1px solid #ccc;
-            color: #666;
-          }
-
-          .cancel-btn:hover:not(:disabled),
-          .back-btn:hover:not(:disabled) {
-            background: #f5f5f5;
-          }
-
-          .primary-btn {
-            background: #0066cc;
-            border: none;
-            color: white;
-          }
-
-          .primary-btn:hover:not(:disabled) {
-            background: #0052a3;
-          }
-
-          .primary-btn:disabled {
-            background: #99c2e8;
-          }
-
-          .secondary-btn {
-            background: #f0f0f0;
-            border: 1px solid #ccc;
-            color: #333;
-          }
-
-          .secondary-btn:hover:not(:disabled) {
-            background: #e0e0e0;
-          }
-
-          button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-          }
-
-          /* Transactions Step */
-          .balance-summary {
-            display: grid;
-            gap: 0.5rem;
-            padding: 1rem;
-            background: #f9f9f9;
-            border-radius: 4px;
-            margin-bottom: 1rem;
-          }
-
-          .balance-summary.large {
-            padding: 1.5rem;
-            font-size: 1.1rem;
-          }
-
-          .balance-row {
-            display: flex;
-            justify-content: space-between;
-          }
-
-          .balance-row.discrepancy {
-            padding-top: 0.5rem;
-            border-top: 1px solid #ddd;
-            font-weight: 600;
-          }
-
-          .balance-row.discrepancy.balanced {
-            color: #28a745;
-          }
-
-          .balance-row.discrepancy.unbalanced {
-            color: #dc3545;
-          }
-
-          .transactions-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.75rem;
-            font-size: 0.875rem;
-            color: #666;
-          }
-
-          .bulk-actions {
-            display: flex;
-            gap: 1rem;
-          }
-
-          .link-btn {
-            background: none;
-            border: none;
-            color: #0066cc;
-            cursor: pointer;
-            padding: 0;
-            font-size: 0.875rem;
-          }
-
-          .link-btn:hover {
-            text-decoration: underline;
-          }
-
-          .transactions-list {
-            max-height: 300px;
-            overflow-y: auto;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-          }
-
-          .no-transactions {
-            padding: 2rem;
-            text-align: center;
-            color: #666;
-          }
-
-          .transaction-row {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 0.75rem 1rem;
-            border-bottom: 1px solid #eee;
-            cursor: pointer;
-            transition: background 0.15s;
-          }
-
-          .transaction-row:last-child {
-            border-bottom: none;
-          }
-
-          .transaction-row:hover {
-            background: #f5f5f5;
-          }
-
-          .transaction-row.selected {
-            background: #e6f0ff;
-          }
-
-          .transaction-row input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-          }
-
-          .tx-date {
-            width: 80px;
-            font-size: 0.875rem;
-            color: #666;
-          }
-
-          .tx-payee {
-            flex: 1;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-          }
-
-          .tx-amount {
-            font-family: monospace;
-            font-weight: 500;
-          }
-
-          .tx-amount.negative {
-            color: #dc3545;
-          }
-
-          .tx-amount.positive {
-            color: #28a745;
-          }
-
-          /* Review Step */
-          .status-message {
-            padding: 1rem;
-            border-radius: 4px;
-            margin: 1rem 0;
-          }
-
-          .status-message.success {
-            background: #d4edda;
-            color: #155724;
-          }
-
-          .status-message.warning {
-            background: #fff3cd;
-            color: #856404;
-          }
-
-          .options-list {
-            margin: 0.5rem 0 1rem 1.5rem;
-            color: #666;
-          }
-
-          .options-list li {
-            margin-bottom: 0.25rem;
-          }
-
-          .adjustment-section {
-            margin-top: 1rem;
-          }
-
-          .adjustment-form {
-            display: flex;
-            gap: 1rem;
-            align-items: flex-end;
-            margin-top: 1rem;
-          }
-
-          .adjustment-form label {
-            flex: 1;
-          }
-
-          .adjustment-form select {
-            margin-top: 0.5rem;
-          }
-
-          .adjustment-form .secondary-btn {
-            white-space: nowrap;
-          }
-        `}</style>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 

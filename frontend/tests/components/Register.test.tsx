@@ -188,21 +188,22 @@ describe('RegisterPage', () => {
   })
 
   it('should have timezone dropdown with IANA timezone options', async () => {
+    const user = userEvent.setup()
     renderRegisterPage()
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/timezone/i)).toBeInTheDocument()
+      expect(screen.getByRole('combobox', { name: /timezone/i })).toBeInTheDocument()
     })
 
-    const timezoneSelect = screen.getByLabelText(/timezone/i)
+    const timezoneSelect = screen.getByRole('combobox', { name: /timezone/i })
 
-    // Should have common IANA timezones
-    expect(timezoneSelect).toBeInTheDocument()
+    // Should have common IANA timezones - open dropdown to check
+    await user.click(timezoneSelect)
 
-    // Check for presence of option elements (either as options or when dropdown is clicked)
-    const options = timezoneSelect.querySelectorAll('option')
-    // At minimum should have placeholder + some timezone options
-    expect(options.length).toBeGreaterThan(1)
+    await waitFor(() => {
+      // Check for some common timezone options (underscores replaced with spaces in display)
+      expect(screen.getByRole('option', { name: /America\/New York/ })).toBeInTheDocument()
+    })
   })
 
   it('should submit registration and auto-login on success', async () => {
@@ -224,12 +225,18 @@ describe('RegisterPage', () => {
     const emailInput = screen.getByLabelText(/email/i)
     const passwordInput = screen.getByLabelText(/^password$/i)
     const confirmPasswordInput = screen.getByLabelText(/confirm password/i)
-    const timezoneSelect = screen.getByLabelText(/timezone/i)
+    const timezoneSelect = screen.getByRole('combobox', { name: /timezone/i })
 
     await user.type(emailInput, 'newuser@example.com')
     await user.type(passwordInput, 'password123')
     await user.type(confirmPasswordInput, 'password123')
-    await user.selectOptions(timezoneSelect, 'Europe/Brussels')
+
+    // Select timezone using shadcn Select (click to open, click option)
+    await user.click(timezoneSelect)
+    await waitFor(() => {
+      expect(screen.getByRole('option', { name: /Europe\/Brussels/ })).toBeInTheDocument()
+    })
+    await user.click(screen.getByRole('option', { name: /Europe\/Brussels/ }))
 
     const submitButton = screen.getByRole('button', { name: /register|sign up|create account/i })
     await user.click(submitButton)
@@ -259,12 +266,18 @@ describe('RegisterPage', () => {
     const emailInput = screen.getByLabelText(/email/i)
     const passwordInput = screen.getByLabelText(/^password$/i)
     const confirmPasswordInput = screen.getByLabelText(/confirm password/i)
-    const timezoneSelect = screen.getByLabelText(/timezone/i)
+    const timezoneSelect = screen.getByRole('combobox', { name: /timezone/i })
 
     await user.type(emailInput, 'existing@example.com')
     await user.type(passwordInput, 'password123')
     await user.type(confirmPasswordInput, 'password123')
-    await user.selectOptions(timezoneSelect, 'Europe/Brussels')
+
+    // Select timezone using shadcn Select
+    await user.click(timezoneSelect)
+    await waitFor(() => {
+      expect(screen.getByRole('option', { name: /Europe\/Brussels/ })).toBeInTheDocument()
+    })
+    await user.click(screen.getByRole('option', { name: /Europe\/Brussels/ }))
 
     const submitButton = screen.getByRole('button', { name: /register|sign up|create account/i })
     await user.click(submitButton)
@@ -292,12 +305,18 @@ describe('RegisterPage', () => {
     const emailInput = screen.getByLabelText(/email/i)
     const passwordInput = screen.getByLabelText(/^password$/i)
     const confirmPasswordInput = screen.getByLabelText(/confirm password/i)
-    const timezoneSelect = screen.getByLabelText(/timezone/i)
+    const timezoneSelect = screen.getByRole('combobox', { name: /timezone/i })
 
     await user.type(emailInput, 'newuser@example.com')
     await user.type(passwordInput, 'password123')
     await user.type(confirmPasswordInput, 'password123')
-    await user.selectOptions(timezoneSelect, 'Europe/Brussels')
+
+    // Select timezone using shadcn Select
+    await user.click(timezoneSelect)
+    await waitFor(() => {
+      expect(screen.getByRole('option', { name: /Europe\/Brussels/ })).toBeInTheDocument()
+    })
+    await user.click(screen.getByRole('option', { name: /Europe\/Brussels/ }))
 
     const submitButton = screen.getByRole('button', { name: /register|sign up|create account/i })
     await user.click(submitButton)
@@ -330,12 +349,18 @@ describe('RegisterPage', () => {
     const emailInput = screen.getByLabelText(/email/i)
     const passwordInput = screen.getByLabelText(/^password$/i)
     const confirmPasswordInput = screen.getByLabelText(/confirm password/i)
-    const timezoneSelect = screen.getByLabelText(/timezone/i)
+    const timezoneSelect = screen.getByRole('combobox', { name: /timezone/i })
 
     await user.type(emailInput, 'newuser@example.com')
     await user.type(passwordInput, 'password123')
     await user.type(confirmPasswordInput, 'password123')
-    await user.selectOptions(timezoneSelect, 'Europe/Brussels')
+
+    // Select timezone using shadcn Select
+    await user.click(timezoneSelect)
+    await waitFor(() => {
+      expect(screen.getByRole('option', { name: /Europe\/Brussels/ })).toBeInTheDocument()
+    })
+    await user.click(screen.getByRole('option', { name: /Europe\/Brussels/ }))
 
     const submitButton = screen.getByRole('button', { name: /register|sign up|create account/i })
     await user.click(submitButton)
@@ -344,7 +369,8 @@ describe('RegisterPage', () => {
       expect(emailInput).toBeDisabled()
       expect(passwordInput).toBeDisabled()
       expect(confirmPasswordInput).toBeDisabled()
-      expect(timezoneSelect).toBeDisabled()
+      // shadcn Select uses aria-disabled for disabled state
+      expect(timezoneSelect).toHaveAttribute('disabled')
     })
 
     // Cleanup

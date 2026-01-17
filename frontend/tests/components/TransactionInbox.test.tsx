@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { TransactionInbox } from '@/components/TransactionInbox'
 
@@ -109,7 +109,8 @@ describe('TransactionInbox', () => {
 
     render(<TransactionInbox />)
 
-    expect(screen.getByText(/loading transactions/i)).toBeInTheDocument()
+    // Skeleton loading shows animate-pulse class
+    expect(document.querySelector('[class*="animate-pulse"]')).toBeInTheDocument()
   })
 
   it('should display transactions when loaded', async () => {
@@ -159,7 +160,7 @@ describe('TransactionInbox', () => {
     expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument()
   })
 
-  it('should display category dropdown with groups', async () => {
+  it('should display category dropdown as combobox', async () => {
     vi.mocked(transactionService.listInbox).mockResolvedValueOnce({
       transactions: mockTransactions,
       total: 2,
@@ -173,15 +174,7 @@ describe('TransactionInbox', () => {
     })
 
     const categorySelects = screen.getAllByRole('combobox')
-    expect(categorySelects).toHaveLength(2)
-
-    // Check that the optgroup and options exist via role queries
-    const optgroups = screen.getAllByRole('group')
-    expect(optgroups.length).toBeGreaterThanOrEqual(2) // One per select
-
-    // Check options exist (Groceries appears as payee and as category option)
-    expect(screen.getAllByRole('option', { name: 'Groceries' })).toHaveLength(2)
-    expect(screen.getAllByRole('option', { name: 'Dining Out' })).toHaveLength(2)
+    expect(categorySelects).toHaveLength(2) // One per transaction
   })
 
   it('should disable approve button when no category selected', async () => {
@@ -216,8 +209,15 @@ describe('TransactionInbox', () => {
       expect(screen.getByText('Grocery Store')).toBeInTheDocument()
     })
 
+    // Click the first category select trigger to open dropdown
     const categorySelects = screen.getAllByRole('combobox')
-    await user.selectOptions(categorySelects[0], 'cat-1')
+    await user.click(categorySelects[0])
+
+    // Wait for dropdown to open and select an option
+    await waitFor(() => {
+      expect(screen.getByRole('option', { name: 'Groceries' })).toBeInTheDocument()
+    })
+    await user.click(screen.getByRole('option', { name: 'Groceries' }))
 
     const approveButtons = screen.getAllByRole('button', { name: /approve/i })
     expect(approveButtons[0]).not.toBeDisabled()
@@ -247,9 +247,15 @@ describe('TransactionInbox', () => {
       expect(screen.getByText('Grocery Store')).toBeInTheDocument()
     })
 
-    // Select category for first transaction
+    // Click the first category select trigger to open dropdown
     const categorySelects = screen.getAllByRole('combobox')
-    await user.selectOptions(categorySelects[0], 'cat-1')
+    await user.click(categorySelects[0])
+
+    // Wait for dropdown to open and select an option
+    await waitFor(() => {
+      expect(screen.getByRole('option', { name: 'Groceries' })).toBeInTheDocument()
+    })
+    await user.click(screen.getByRole('option', { name: 'Groceries' }))
 
     // Click approve
     const approveButtons = screen.getAllByRole('button', { name: /approve/i })

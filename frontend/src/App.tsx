@@ -7,7 +7,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from '@/lib/auth-context'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
-import { AppLayout } from '@/components/AppLayout'
+import { SidebarLayout } from '@/components/layout/SidebarLayout'
 import { LoginPage } from '@/pages/Login'
 import { RegisterPage } from '@/pages/Register'
 import { AccountsPage } from '@/pages/Accounts'
@@ -77,9 +77,9 @@ export default function App() {
         path="/"
         element={
           <ProtectedRoute>
-            <AppLayout>
+            <SidebarLayout>
               <DashboardPage />
-            </AppLayout>
+            </SidebarLayout>
           </ProtectedRoute>
         }
       />
@@ -87,9 +87,9 @@ export default function App() {
         path="/accounts"
         element={
           <ProtectedRoute>
-            <AppLayout>
+            <SidebarLayout>
               <AccountsPage />
-            </AppLayout>
+            </SidebarLayout>
           </ProtectedRoute>
         }
       />
@@ -97,9 +97,9 @@ export default function App() {
         path="/transactions"
         element={
           <ProtectedRoute>
-            <AppLayout>
+            <SidebarLayout>
               <TransactionsPage />
-            </AppLayout>
+            </SidebarLayout>
           </ProtectedRoute>
         }
       />
@@ -107,9 +107,9 @@ export default function App() {
         path="/budget"
         element={
           <ProtectedRoute>
-            <AppLayout>
+            <SidebarLayout>
               <BudgetPage />
-            </AppLayout>
+            </SidebarLayout>
           </ProtectedRoute>
         }
       />

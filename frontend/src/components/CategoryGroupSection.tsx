@@ -8,8 +8,11 @@ import { useState } from 'react'
 import type { CategoryGroupBudget } from '@/types/budget'
 import type { CategoryTarget, UnderfundedResponse } from '@/types/target'
 import type { Category, CategoryGroup } from '@/types/category'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { CategoryRow } from './CategoryRow'
 import { CategoryModal } from './CategoryModal'
+import { cn } from '@/lib/utils'
 
 interface CategoryGroupSectionProps {
   group: CategoryGroupBudget
@@ -59,9 +62,9 @@ function calculateGroupTotals(group: CategoryGroupBudget): {
  * Get CSS class for available amount based on value.
  */
 function getAvailableClass(available: number): string {
-  if (available < 0) return 'negative'
-  if (available > 0) return 'positive'
-  return 'zero'
+  if (available < 0) return 'text-destructive'
+  if (available > 0) return 'text-green-600'
+  return 'text-muted-foreground'
 }
 
 export function CategoryGroupSection({
@@ -110,24 +113,28 @@ export function CategoryGroupSection({
   }
 
   return (
-    <div className="category-group-section">
-      <div className="group-header">
+    <Card className="mb-6 overflow-hidden">
+      <div className="flex justify-between items-center py-3 px-4 bg-muted border-b">
         <button
-          className="group-name-button"
+          className="font-semibold text-foreground uppercase text-sm tracking-wide bg-transparent border-0 cursor-pointer py-1 px-2 -my-1 -mx-2 rounded transition-colors hover:bg-background/50"
           onClick={handleEditGroup}
           title="Click to edit group"
         >
           {group.name}
         </button>
-        <div className="group-totals">
-          <span className="funded">{formatAmount(totals.funded.toString())}</span>
-          <span className="activity">{formatAmount(totals.activity.toString())}</span>
-          <span className={`available ${getAvailableClass(totals.available)}`}>
+        <div className="flex gap-8 text-right">
+          <span className="min-w-[100px] text-right font-semibold text-sm tabular-nums">
+            {formatAmount(totals.funded.toString())}
+          </span>
+          <span className="min-w-[100px] text-right font-semibold text-sm tabular-nums text-muted-foreground">
+            {formatAmount(totals.activity.toString())}
+          </span>
+          <span className={cn('min-w-[100px] text-right font-semibold text-sm tabular-nums', getAvailableClass(totals.available))}>
             {formatAmount(totals.available.toString())}
           </span>
         </div>
       </div>
-      <div className="category-list">
+      <div className="bg-background">
         {group.categories.map((category) => (
           <CategoryRow
             key={category.id}
@@ -141,9 +148,13 @@ export function CategoryGroupSection({
             canFund={canFund}
           />
         ))}
-        <button className="add-category-button" onClick={handleAddCategory}>
+        <Button
+          variant="ghost"
+          className="w-full justify-start py-3 px-4 text-muted-foreground border-t border-dashed hover:bg-primary/5 hover:text-primary"
+          onClick={handleAddCategory}
+        >
           + Add Category
-        </button>
+        </Button>
       </div>
 
       <CategoryModal
@@ -155,100 +166,7 @@ export function CategoryGroupSection({
         onSave={handleCategorySaved}
         onDelete={handleCategoryDeleted}
       />
-
-      <style>{`
-        .category-group-section {
-          margin-bottom: 1.5rem;
-          background: white;
-          border-radius: 8px;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-          overflow: hidden;
-        }
-
-        .group-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 0.75rem 1rem;
-          background-color: #f5f5f5;
-          border-bottom: 1px solid #ddd;
-        }
-
-        .group-name-button {
-          font-weight: 600;
-          color: #333;
-          text-transform: uppercase;
-          font-size: 0.875rem;
-          letter-spacing: 0.05em;
-          background: none;
-          border: none;
-          cursor: pointer;
-          padding: 0.25rem 0.5rem;
-          margin: -0.25rem -0.5rem;
-          border-radius: 4px;
-          transition: background-color 0.15s;
-        }
-
-        .group-name-button:hover {
-          background-color: rgba(0, 0, 0, 0.05);
-        }
-
-        .group-totals {
-          display: flex;
-          gap: 2rem;
-          text-align: right;
-        }
-
-        .group-totals .funded,
-        .group-totals .activity,
-        .group-totals .available {
-          min-width: 100px;
-          text-align: right;
-          font-weight: 600;
-          font-size: 0.875rem;
-          font-variant-numeric: tabular-nums;
-        }
-
-        .group-totals .activity {
-          color: #666;
-        }
-
-        .group-totals .available.positive {
-          color: #22a722;
-        }
-
-        .group-totals .available.negative {
-          color: #c00;
-        }
-
-        .group-totals .available.zero {
-          color: #666;
-        }
-
-        .category-list {
-          background: white;
-        }
-
-        .add-category-button {
-          display: block;
-          width: 100%;
-          padding: 0.75rem 1rem;
-          background: none;
-          border: none;
-          border-top: 1px dashed #ddd;
-          color: #666;
-          font-size: 0.875rem;
-          cursor: pointer;
-          text-align: left;
-          transition: background-color 0.15s, color 0.15s;
-        }
-
-        .add-category-button:hover {
-          background-color: #f0f7ff;
-          color: #0066cc;
-        }
-      `}</style>
-    </div>
+    </Card>
   )
 }
 

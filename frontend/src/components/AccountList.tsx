@@ -8,6 +8,18 @@ import { useEffect, useState } from 'react'
 import { accountService } from '@/services/accountService'
 import { ReconcileModal } from './ReconcileModal'
 import type { Account } from '@/types/account'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 
 interface AccountListProps {
   onAccountSelect?: (account: Account) => void
@@ -50,72 +62,89 @@ export function AccountList({ onAccountSelect, onReconcileComplete }: AccountLis
   }
 
   if (isLoading) {
-    return <div className="account-list loading">Loading accounts...</div>
+    return (
+      <Card className="p-6">
+        <Skeleton className="h-6 w-32 mb-4" />
+        <div className="space-y-3">
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+        </div>
+      </Card>
+    )
   }
 
   if (error) {
     return (
-      <div className="account-list error">
-        <p>Error: {error}</p>
-        <button onClick={loadAccounts}>Retry</button>
-      </div>
+      <Card className="p-6 text-center">
+        <p className="text-destructive mb-4">Error: {error}</p>
+        <Button onClick={loadAccounts}>Retry</Button>
+      </Card>
     )
   }
 
   if (accounts.length === 0) {
     return (
-      <div className="account-list empty">
-        <p>No accounts yet.</p>
+      <Card className="p-8 text-center text-muted-foreground">
+        <p className="mb-2">No accounts yet.</p>
         <p>Create your first account to get started!</p>
-      </div>
+      </Card>
     )
   }
 
+  const totalBalance = accounts.reduce((sum, acc) => sum + parseFloat(acc.balance), 0)
+
   return (
-    <div className="account-list">
-      <h2>Accounts</h2>
-      <ul className="accounts">
-        {accounts.map((account) => (
-          <li
-            key={account.id}
-            className="account-item"
-            onClick={() => onAccountSelect?.(account)}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                onAccountSelect?.(account)
-              }
-            }}
-          >
-            <div className="account-info">
-              <span className="account-name">{account.name}</span>
-              <span className="account-type">
-                {getAccountTypeLabel(account.account_type)}
-              </span>
-            </div>
-            <div className="account-balance">
-              {formatCurrency(account.balance)}
-            </div>
-            <button
-              className="reconcile-button"
-              onClick={(e) => {
-                e.stopPropagation()
-                setReconcileAccount(account)
-              }}
-              aria-label={`Reconcile ${account.name}`}
+    <Card>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Account Name</TableHead>
+            <TableHead>Type</TableHead>
+            <TableHead className="text-right">Balance</TableHead>
+            <TableHead className="w-[100px]"></TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {accounts.map((account) => (
+            <TableRow
+              key={account.id}
+              className={onAccountSelect ? 'cursor-pointer hover:bg-muted/50' : ''}
+              onClick={() => onAccountSelect?.(account)}
             >
-              Reconcile
-            </button>
-          </li>
-        ))}
-      </ul>
-      <div className="account-summary">
-        <strong>Total:</strong>{' '}
-        {formatCurrency(
-          accounts.reduce((sum, acc) => sum + parseFloat(acc.balance), 0).toString()
-        )}
-      </div>
+              <TableCell className="font-medium">{account.name}</TableCell>
+              <TableCell className="text-muted-foreground">
+                {getAccountTypeLabel(account.account_type)}
+              </TableCell>
+              <TableCell className="text-right tabular-nums">
+                {formatCurrency(account.balance)}
+              </TableCell>
+              <TableCell>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setReconcileAccount(account)
+                  }}
+                  aria-label={`Reconcile ${account.name}`}
+                >
+                  Reconcile
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+        <TableFooter>
+          <TableRow>
+            <TableCell colSpan={2} className="font-semibold">Total</TableCell>
+            <TableCell className="text-right font-semibold tabular-nums">
+              {formatCurrency(totalBalance.toString())}
+            </TableCell>
+            <TableCell></TableCell>
+          </TableRow>
+        </TableFooter>
+      </Table>
 
       <ReconcileModal
         accountId={reconcileAccount?.id || ''}
@@ -129,7 +158,7 @@ export function AccountList({ onAccountSelect, onReconcileComplete }: AccountLis
           onReconcileComplete?.()
         }}
       />
-    </div>
+    </Card>
   )
 }
 

@@ -8,6 +8,25 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/lib/auth-context'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { cn } from '@/lib/utils'
 
 // Common IANA timezones for the dropdown
 const TIMEZONES = [
@@ -116,241 +135,145 @@ export function RegisterPage() {
   }
 
   return (
-    <div className="register-page">
-      <div className="register-container">
-        <h1>Create Account</h1>
-
-        {error && (
-          <div className="error-message" role="alert">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} noValidate>
-          <div className="form-group">
-            <label htmlFor="email">Email</label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value)
-                clearFieldError('email')
-              }}
-              disabled={isLoading}
-              autoComplete="email"
-              autoFocus
-              aria-invalid={!!validationErrors.email}
-              aria-describedby={validationErrors.email ? 'email-error' : undefined}
-            />
-            {validationErrors.email && (
-              <span id="email-error" className="field-error" role="alert">
-                {validationErrors.email}
-              </span>
-            )}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value)
-                clearFieldError('password')
-              }}
-              disabled={isLoading}
-              autoComplete="new-password"
-              aria-invalid={!!validationErrors.password}
-              aria-describedby={validationErrors.password ? 'password-error' : undefined}
-            />
-            {validationErrors.password && (
-              <span id="password-error" className="field-error" role="alert">
-                {validationErrors.password}
-              </span>
-            )}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="confirmPassword">Confirm Password</label>
-            <input
-              id="confirmPassword"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => {
-                setConfirmPassword(e.target.value)
-                clearFieldError('confirmPassword')
-              }}
-              disabled={isLoading}
-              autoComplete="new-password"
-              aria-invalid={!!validationErrors.confirmPassword}
-              aria-describedby={validationErrors.confirmPassword ? 'confirm-password-error' : undefined}
-            />
-            {validationErrors.confirmPassword && (
-              <span id="confirm-password-error" className="field-error" role="alert">
-                {validationErrors.confirmPassword}
-              </span>
-            )}
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="timezone">Timezone</label>
-            <select
-              id="timezone"
-              value={timezone}
-              onChange={(e) => {
-                setTimezone(e.target.value)
-                clearFieldError('timezone')
-              }}
-              disabled={isLoading}
-              aria-invalid={!!validationErrors.timezone}
-              aria-describedby={validationErrors.timezone ? 'timezone-error' : undefined}
+    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl text-center">Create Account</CardTitle>
+          <CardDescription className="text-center">
+            Enter your details to create a new account
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {error && (
+            <div
+              className="mb-4 rounded-md bg-destructive/15 p-3 text-sm text-destructive"
+              role="alert"
             >
-              <option value="">Select your timezone...</option>
-              {TIMEZONES.map((tz) => (
-                <option key={tz} value={tz}>
-                  {tz.replace(/_/g, ' ')}
-                </option>
-              ))}
-            </select>
-            {validationErrors.timezone && (
-              <span id="timezone-error" className="field-error" role="alert">
-                {validationErrors.timezone}
-              </span>
-            )}
-          </div>
+              {error}
+            </div>
+          )}
 
-          <button type="submit" disabled={isLoading} className="submit-button">
-            {isLoading ? 'Creating Account...' : 'Create Account'}
-          </button>
-        </form>
+          <form onSubmit={handleSubmit} noValidate className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value)
+                  clearFieldError('email')
+                }}
+                disabled={isLoading}
+                autoComplete="email"
+                autoFocus
+                placeholder="you@example.com"
+                className={cn(validationErrors.email && 'border-destructive')}
+                aria-invalid={!!validationErrors.email}
+                aria-describedby={validationErrors.email ? 'email-error' : undefined}
+              />
+              {validationErrors.email && (
+                <p id="email-error" className="text-sm text-destructive" role="alert">
+                  {validationErrors.email}
+                </p>
+              )}
+            </div>
 
-        <p className="auth-link">
-          Already have an account? <Link to="/login">Log In</Link>
-        </p>
-      </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value)
+                  clearFieldError('password')
+                }}
+                disabled={isLoading}
+                autoComplete="new-password"
+                className={cn(validationErrors.password && 'border-destructive')}
+                aria-invalid={!!validationErrors.password}
+                aria-describedby={validationErrors.password ? 'password-error' : undefined}
+              />
+              {validationErrors.password && (
+                <p id="password-error" className="text-sm text-destructive" role="alert">
+                  {validationErrors.password}
+                </p>
+              )}
+            </div>
 
-      <style>{`
-        .register-page {
-          min-height: 100vh;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 1rem;
-          background-color: #f5f5f5;
-        }
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => {
+                  setConfirmPassword(e.target.value)
+                  clearFieldError('confirmPassword')
+                }}
+                disabled={isLoading}
+                autoComplete="new-password"
+                className={cn(validationErrors.confirmPassword && 'border-destructive')}
+                aria-invalid={!!validationErrors.confirmPassword}
+                aria-describedby={
+                  validationErrors.confirmPassword ? 'confirm-password-error' : undefined
+                }
+              />
+              {validationErrors.confirmPassword && (
+                <p id="confirm-password-error" className="text-sm text-destructive" role="alert">
+                  {validationErrors.confirmPassword}
+                </p>
+              )}
+            </div>
 
-        .register-container {
-          width: 100%;
-          max-width: 400px;
-          padding: 2rem;
-          background: white;
-          border-radius: 8px;
-          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
+            <div className="space-y-2">
+              <Label htmlFor="timezone">Timezone</Label>
+              <Select
+                value={timezone}
+                onValueChange={(value) => {
+                  setTimezone(value)
+                  clearFieldError('timezone')
+                }}
+                disabled={isLoading}
+              >
+                <SelectTrigger
+                  id="timezone"
+                  className={cn(validationErrors.timezone && 'border-destructive')}
+                  aria-invalid={!!validationErrors.timezone}
+                  aria-describedby={validationErrors.timezone ? 'timezone-error' : undefined}
+                >
+                  <SelectValue placeholder="Select your timezone..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {TIMEZONES.map((tz) => (
+                    <SelectItem key={tz} value={tz}>
+                      {tz.replace(/_/g, ' ')}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {validationErrors.timezone && (
+                <p id="timezone-error" className="text-sm text-destructive" role="alert">
+                  {validationErrors.timezone}
+                </p>
+              )}
+            </div>
 
-        .register-container h1 {
-          margin: 0 0 1.5rem;
-          text-align: center;
-          font-size: 1.5rem;
-          color: #333;
-        }
-
-        .error-message {
-          padding: 0.75rem;
-          margin-bottom: 1rem;
-          background-color: #fee;
-          border: 1px solid #fcc;
-          border-radius: 4px;
-          color: #c00;
-          font-size: 0.875rem;
-        }
-
-        .form-group {
-          margin-bottom: 1rem;
-        }
-
-        .form-group label {
-          display: block;
-          margin-bottom: 0.25rem;
-          font-weight: 500;
-          color: #333;
-        }
-
-        .form-group input,
-        .form-group select {
-          width: 100%;
-          padding: 0.625rem;
-          border: 1px solid #ccc;
-          border-radius: 4px;
-          font-size: 1rem;
-          box-sizing: border-box;
-        }
-
-        .form-group input:focus,
-        .form-group select:focus {
-          outline: none;
-          border-color: #0066cc;
-          box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
-        }
-
-        .form-group input:disabled,
-        .form-group select:disabled {
-          background-color: #f5f5f5;
-          cursor: not-allowed;
-        }
-
-        .form-group input[aria-invalid="true"],
-        .form-group select[aria-invalid="true"] {
-          border-color: #c00;
-        }
-
-        .field-error {
-          display: block;
-          margin-top: 0.25rem;
-          color: #c00;
-          font-size: 0.875rem;
-        }
-
-        .submit-button {
-          width: 100%;
-          padding: 0.75rem;
-          background-color: #0066cc;
-          color: white;
-          border: none;
-          border-radius: 4px;
-          font-size: 1rem;
-          font-weight: 500;
-          cursor: pointer;
-          margin-top: 0.5rem;
-        }
-
-        .submit-button:hover:not(:disabled) {
-          background-color: #0055aa;
-        }
-
-        .submit-button:disabled {
-          background-color: #ccc;
-          cursor: not-allowed;
-        }
-
-        .auth-link {
-          margin-top: 1.5rem;
-          text-align: center;
-          color: #666;
-          font-size: 0.875rem;
-        }
-
-        .auth-link a {
-          color: #0066cc;
-          text-decoration: none;
-        }
-
-        .auth-link a:hover {
-          text-decoration: underline;
-        }
-      `}</style>
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? 'Creating Account...' : 'Create Account'}
+            </Button>
+          </form>
+        </CardContent>
+        <CardFooter className="justify-center">
+          <p className="text-sm text-muted-foreground">
+            Already have an account?{' '}
+            <Link to="/login" className="text-primary hover:underline">
+              Log In
+            </Link>
+          </p>
+        </CardFooter>
+      </Card>
     </div>
   )
 }

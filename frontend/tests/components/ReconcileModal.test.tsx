@@ -28,7 +28,7 @@ vi.mock('@/services/transactionService', () => ({
 
 vi.mock('@/services/categoryService', () => ({
   categoryService: {
-    listGroups: vi.fn(),
+    list: vi.fn(),
   },
 }))
 
@@ -246,10 +246,11 @@ describe('ReconcileModal', () => {
     it('should show current balances and discrepancy', async () => {
       await renderAtStep2()
 
-      // Should show statement balance, cleared balance
-      expect(screen.getByText(/statement balance/i)).toBeInTheDocument()
-      expect(screen.getByText(/cleared balance/i)).toBeInTheDocument()
-      expect(screen.getByText(/difference/i)).toBeInTheDocument()
+      // Should show balance summary section with amounts
+      // The balance labels are shown along with values
+      expect(screen.getByText('$1,500.00')).toBeInTheDocument() // statement
+      expect(screen.getByText('$1,400.00')).toBeInTheDocument() // cleared
+      expect(screen.getByText('Difference')).toBeInTheDocument()
     })
 
     it('should mark transaction as cleared when checkbox is clicked', async () => {
@@ -276,7 +277,7 @@ describe('ReconcileModal', () => {
     it('should proceed to step 3 when continue button is clicked', async () => {
       const user = await renderAtStep2()
 
-      vi.mocked(categoryService.listGroups).mockResolvedValueOnce(mockCategoryGroups)
+      vi.mocked(categoryService.list).mockResolvedValueOnce({ groups: mockCategoryGroups, total_groups: 1, total_categories: 1 })
 
       await user.click(screen.getByRole('button', { name: /continue/i }))
 
@@ -300,7 +301,7 @@ describe('ReconcileModal', () => {
         transactions: mockTransactions,
         total: 3,
       })
-      vi.mocked(categoryService.listGroups).mockResolvedValueOnce(mockCategoryGroups)
+      vi.mocked(categoryService.list).mockResolvedValueOnce({ groups: mockCategoryGroups, total_groups: 1, total_categories: 1 })
 
       render(<ReconcileModal {...defaultProps} />)
 
@@ -356,7 +357,7 @@ describe('ReconcileModal', () => {
 
       // Should show the adjustment section with create button
       expect(screen.getByRole('button', { name: /create adjustment/i })).toBeInTheDocument()
-      expect(screen.getByText(/adjustment transaction/i)).toBeInTheDocument()
+      expect(screen.getByText(/create an adjustment/i)).toBeInTheDocument()
     })
 
     it('should go back to step 2 when back button is clicked', async () => {
@@ -393,7 +394,7 @@ describe('ReconcileModal', () => {
         transactions: mockTransactions,
         total: 3,
       })
-      vi.mocked(categoryService.listGroups).mockResolvedValueOnce(mockCategoryGroups)
+      vi.mocked(categoryService.list).mockResolvedValueOnce({ groups: mockCategoryGroups, total_groups: 1, total_categories: 1 })
       vi.mocked(reconciliationService.createAdjustment).mockResolvedValueOnce({
         transaction: {
           id: 'adj-tx-1',
@@ -481,7 +482,7 @@ describe('ReconcileModal', () => {
         transactions: mockTransactions,
         total: 3,
       })
-      vi.mocked(categoryService.listGroups).mockResolvedValueOnce(mockCategoryGroups)
+      vi.mocked(categoryService.list).mockResolvedValueOnce({ groups: mockCategoryGroups, total_groups: 1, total_categories: 1 })
       vi.mocked(reconciliationService.complete).mockRejectedValueOnce(
         new Error('Failed to complete')
       )

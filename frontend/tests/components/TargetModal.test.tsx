@@ -74,7 +74,7 @@ describe('TargetModal', () => {
       const user = userEvent.setup()
       render(<TargetModal {...defaultProps} />)
 
-      await user.click(screen.getByLabelText('Close'))
+      await user.click(screen.getByRole('button', { name: 'Close' }))
 
       expect(defaultProps.onClose).toHaveBeenCalled()
     })
@@ -224,22 +224,22 @@ describe('TargetModal', () => {
     it('should select Monthly Needed by default', () => {
       render(<TargetModal {...defaultProps} />)
 
-      // Monthly Needed should be checked by default (first radio)
+      // Monthly Needed should be checked by default - indicated by border-primary class
       const monthlyOption = screen.getByText('Monthly Needed').closest('label')
-      expect(monthlyOption).toHaveClass('selected')
+      expect(monthlyOption).toHaveClass('border-primary')
     })
 
     it('should allow switching between target types', async () => {
       const user = userEvent.setup()
       render(<TargetModal {...defaultProps} />)
 
-      // Click Target Balance
+      // Click Target Balance - it should get border-primary class
       await user.click(screen.getByText('Target Balance'))
-      expect(screen.getByText('Target Balance').closest('label')).toHaveClass('selected')
+      expect(screen.getByText('Target Balance').closest('label')).toHaveClass('border-primary')
 
-      // Click Target by Date
+      // Click Target by Date - it should get border-primary class
       await user.click(screen.getByText('Target by Date'))
-      expect(screen.getByText('Target by Date').closest('label')).toHaveClass('selected')
+      expect(screen.getByText('Target by Date').closest('label')).toHaveClass('border-primary')
     })
   })
 

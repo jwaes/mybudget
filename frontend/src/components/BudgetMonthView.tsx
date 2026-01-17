@@ -12,10 +12,14 @@ import type { CategoryGroup } from '@/types/category'
 import { budgetService } from '@/services/budgetService'
 import { targetService } from '@/services/targetService'
 import { categoryService } from '@/services/categoryService'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 import { MonthNavigator } from './MonthNavigator'
 import { CategoryGroupSection } from './CategoryGroupSection'
 import { CategoryGroupModal } from './CategoryGroupModal'
 import { useToast } from './Toast'
+import { cn } from '@/lib/utils'
 
 interface BudgetMonthViewProps {
   /** Initial month in YYYY-MM format */
@@ -49,9 +53,9 @@ function getCurrentMonth(): string {
  */
 function getToAssignClass(toAssign: string): string {
   const num = parseFloat(toAssign)
-  if (num < 0) return 'overassigned'
-  if (num > 0) return 'available'
-  return 'zero'
+  if (num < 0) return 'text-destructive'
+  if (num > 0) return 'text-green-600'
+  return 'text-foreground'
 }
 
 export function BudgetMonthView({ initialMonth }: BudgetMonthViewProps) {
@@ -301,17 +305,23 @@ export function BudgetMonthView({ initialMonth }: BudgetMonthViewProps) {
 
   if (isLoading && !budgetData) {
     return (
-      <div className="budget-loading">
-        <span>Loading budget...</span>
+      <div className="max-w-4xl mx-auto p-4">
+        <div className="flex justify-between items-center mb-6">
+          <Skeleton className="h-10 w-[250px]" />
+          <Skeleton className="h-10 w-[150px]" />
+        </div>
+        <Skeleton className="h-10 w-full mb-4" />
+        <Skeleton className="h-32 w-full mb-4" />
+        <Skeleton className="h-32 w-full mb-4" />
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="budget-error">
+      <div className="flex flex-col items-center justify-center min-h-[300px] gap-4 text-muted-foreground">
         <span>{error}</span>
-        <button onClick={loadBudget}>Retry</button>
+        <Button onClick={loadBudget}>Retry</Button>
       </div>
     )
   }
@@ -321,24 +331,25 @@ export function BudgetMonthView({ initialMonth }: BudgetMonthViewProps) {
   }
 
   return (
-    <div className="budget-month-view">
-      <div className="budget-header">
+    <div className="max-w-4xl mx-auto p-4">
+      <div className="flex justify-between items-center mb-6">
         <MonthNavigator month={month} onMonthChange={handleMonthChange} />
-        <div className="budget-summary">
-          <div className={`to-assign ${getToAssignClass(budgetData.to_assign)}`}>
-            <span className="to-assign-label">To Assign:</span>
-            <span className="to-assign-amount">${formatAmount(budgetData.to_assign)}</span>
+        <div className="flex flex-col items-end gap-3">
+          <div className="flex flex-col items-end">
+            <span className="text-sm text-muted-foreground mb-1">To Assign:</span>
+            <span className={cn('text-2xl font-semibold tabular-nums', getToAssignClass(budgetData.to_assign))}>
+              ${formatAmount(budgetData.to_assign)}
+            </span>
           </div>
           {underfundedSummary && underfundedSummary.categories_underfunded > 0 && (
-            <div className="underfunded-section">
-              <div className="underfunded-info">
-                <span className="underfunded-label">Underfunded:</span>
-                <span className="underfunded-amount">
+            <div className="flex items-center gap-4">
+              <div className="flex flex-col items-end">
+                <span className="text-xs text-muted-foreground">Underfunded:</span>
+                <span className="text-base font-semibold text-orange-500 tabular-nums">
                   ${formatAmount(underfundedSummary.total_underfunded)}
                 </span>
               </div>
-              <button
-                className="fund-all-button"
+              <Button
                 onClick={handleFundAll}
                 disabled={isFunding || parseFloat(budgetData.to_assign) <= 0}
                 title={
@@ -348,30 +359,30 @@ export function BudgetMonthView({ initialMonth }: BudgetMonthViewProps) {
                 }
               >
                 {isFunding ? 'Funding...' : 'Fund Underfunded'}
-              </button>
+              </Button>
             </div>
           )}
         </div>
       </div>
 
-      <div className="column-headers">
-        <span className="column-category">Category</span>
-        <div className="column-amounts">
-          <span className="column-funded">Funded</span>
-          <span className="column-activity">Activity</span>
-          <span className="column-available">Available</span>
+      <div className="flex justify-between items-center py-2 px-4 bg-muted rounded mb-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+        <span>Category</span>
+        <div className="flex gap-8">
+          <span className="min-w-[100px] text-right">Funded</span>
+          <span className="min-w-[100px] text-right">Activity</span>
+          <span className="min-w-[100px] text-right">Available</span>
         </div>
       </div>
 
-      <div className="budget-groups">
+      <div className="min-h-[200px]">
         {budgetData.groups.length === 0 ? (
-          <div className="empty-state">
-            <p>No categories yet.</p>
-            <p>Create some category groups and categories to start budgeting.</p>
-            <button className="add-group-button" onClick={handleAddGroup}>
+          <Card className="text-center p-12 text-muted-foreground">
+            <p className="mb-2">No categories yet.</p>
+            <p className="mb-4">Create some category groups and categories to start budgeting.</p>
+            <Button onClick={handleAddGroup}>
               Add Category Group
-            </button>
-          </div>
+            </Button>
+          </Card>
         ) : (
           <>
             {budgetData.groups.map((group) => {
@@ -393,9 +404,13 @@ export function BudgetMonthView({ initialMonth }: BudgetMonthViewProps) {
                 />
               )
             })}
-            <button className="add-group-button-bottom" onClick={handleAddGroup}>
+            <Button
+              variant="outline"
+              className="w-full mt-4 border-dashed text-muted-foreground hover:text-primary hover:border-primary"
+              onClick={handleAddGroup}
+            >
               + Add Category Group
-            </button>
+            </Button>
           </>
         )}
       </div>
@@ -407,204 +422,6 @@ export function BudgetMonthView({ initialMonth }: BudgetMonthViewProps) {
         onSave={handleGroupSaved}
         onDelete={handleGroupDeleted}
       />
-
-      <style>{`
-        .budget-month-view {
-          max-width: 900px;
-          margin: 0 auto;
-          padding: 1rem;
-        }
-
-        .budget-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 1.5rem;
-        }
-
-        .to-assign {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-end;
-        }
-
-        .to-assign-label {
-          font-size: 0.875rem;
-          color: #666;
-          margin-bottom: 0.25rem;
-        }
-
-        .to-assign-amount {
-          font-size: 1.5rem;
-          font-weight: 600;
-          font-variant-numeric: tabular-nums;
-        }
-
-        .to-assign.available .to-assign-amount {
-          color: #22a722;
-        }
-
-        .to-assign.overassigned .to-assign-amount {
-          color: #c00;
-        }
-
-        .to-assign.zero .to-assign-amount {
-          color: #333;
-        }
-
-        .budget-summary {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-end;
-          gap: 0.75rem;
-        }
-
-        .underfunded-section {
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-        }
-
-        .underfunded-info {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-end;
-        }
-
-        .underfunded-label {
-          font-size: 0.75rem;
-          color: #666;
-        }
-
-        .underfunded-amount {
-          font-size: 1rem;
-          font-weight: 600;
-          color: #e67700;
-          font-variant-numeric: tabular-nums;
-        }
-
-        .fund-all-button {
-          padding: 0.5rem 1rem;
-          background-color: #0066cc;
-          color: white;
-          border: none;
-          border-radius: 4px;
-          cursor: pointer;
-          font-size: 0.875rem;
-          font-weight: 500;
-          transition: background-color 0.2s;
-        }
-
-        .fund-all-button:hover:not(:disabled) {
-          background-color: #0055aa;
-        }
-
-        .fund-all-button:disabled {
-          background-color: #ccc;
-          cursor: not-allowed;
-        }
-
-        .column-headers {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 0.5rem 1rem;
-          background-color: #e5e5e5;
-          border-radius: 4px;
-          margin-bottom: 1rem;
-          font-size: 0.75rem;
-          font-weight: 600;
-          color: #666;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-        }
-
-        .column-amounts {
-          display: flex;
-          gap: 2rem;
-        }
-
-        .column-funded,
-        .column-activity,
-        .column-available {
-          min-width: 100px;
-          text-align: right;
-        }
-
-        .budget-groups {
-          min-height: 200px;
-        }
-
-        .empty-state {
-          text-align: center;
-          padding: 3rem;
-          color: #666;
-          background: white;
-          border-radius: 8px;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        .empty-state p {
-          margin: 0.5rem 0;
-        }
-
-        .add-group-button,
-        .add-group-button-bottom {
-          padding: 0.75rem 1.5rem;
-          background-color: #0066cc;
-          color: white;
-          border: none;
-          border-radius: 4px;
-          cursor: pointer;
-          font-size: 0.875rem;
-          font-weight: 500;
-          transition: background-color 0.2s;
-        }
-
-        .add-group-button {
-          margin-top: 1rem;
-        }
-
-        .add-group-button-bottom {
-          display: block;
-          width: 100%;
-          margin-top: 1rem;
-          background-color: #f5f5f5;
-          color: #666;
-          border: 2px dashed #ccc;
-        }
-
-        .add-group-button:hover,
-        .add-group-button-bottom:hover {
-          background-color: #0055aa;
-          color: white;
-          border-color: #0055aa;
-        }
-
-        .budget-loading,
-        .budget-error {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          min-height: 300px;
-          gap: 1rem;
-          color: #666;
-        }
-
-        .budget-error button {
-          padding: 0.5rem 1rem;
-          background-color: #0066cc;
-          color: white;
-          border: none;
-          border-radius: 4px;
-          cursor: pointer;
-        }
-
-        .budget-error button:hover {
-          background-color: #0055aa;
-        }
-      `}</style>
     </div>
   )
 }

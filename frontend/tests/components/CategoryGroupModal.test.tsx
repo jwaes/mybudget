@@ -70,7 +70,7 @@ describe('CategoryGroupModal', () => {
       const user = userEvent.setup()
       render(<CategoryGroupModal {...defaultProps} />)
 
-      await user.click(screen.getByLabelText('Close'))
+      await user.click(screen.getByRole('button', { name: 'Close' }))
 
       expect(defaultProps.onClose).toHaveBeenCalled()
     })

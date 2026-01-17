@@ -8,6 +8,24 @@ import { useState, useEffect } from 'react'
 import { transactionService } from '@/services/transactionService'
 import { accountService } from '@/services/accountService'
 import type { Account } from '@/types/account'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { cn } from '@/lib/utils'
 
 interface AddTransactionModalProps {
   isOpen: boolean
@@ -24,7 +42,10 @@ export function AddTransactionModal({
 }: AddTransactionModalProps) {
   const [accounts, setAccounts] = useState<Account[]>([])
   const [accountId, setAccountId] = useState(preselectedAccountId || '')
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+  const [date, setDate] = useState(() => {
+    const isoStr = new Date().toISOString()
+    return isoStr.split('T')[0] ?? isoStr.substring(0, 10)
+  })
   const [payee, setPayee] = useState('')
   const [amount, setAmount] = useState('')
   const [memo, setMemo] = useState('')
@@ -36,7 +57,8 @@ export function AddTransactionModal({
     if (isOpen) {
       loadAccounts()
       // Reset form
-      setDate(new Date().toISOString().split('T')[0])
+      const isoStr = new Date().toISOString()
+      setDate(isoStr.split('T')[0] ?? isoStr.substring(0, 10))
       setPayee('')
       setAmount('')
       setMemo('')
@@ -52,8 +74,9 @@ export function AddTransactionModal({
     try {
       const response = await accountService.list()
       setAccounts(response.accounts)
-      if (!accountId && response.accounts.length > 0) {
-        setAccountId(response.accounts[0].id)
+      const firstAccount = response.accounts[0]
+      if (!accountId && firstAccount) {
+        setAccountId(firstAccount.id)
       }
     } catch (err) {
       console.error('Failed to load accounts:', err)
@@ -103,314 +126,129 @@ export function AddTransactionModal({
     }
   }
 
-  if (!isOpen) return null
-
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <header className="modal-header">
-          <h2>Add Transaction</h2>
-          <button className="close-btn" onClick={onClose} aria-label="Close">
-            &times;
-          </button>
-        </header>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Add Transaction</DialogTitle>
+        </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="modal-body">
-          {error && <p className="error-message">{error}</p>}
+        <form onSubmit={handleSubmit}>
+          {error && (
+            <div className="mb-4 rounded-md bg-destructive/15 p-3 text-sm text-destructive">
+              {error}
+            </div>
+          )}
 
-          <div className="form-group">
-            <label htmlFor="account">Account</label>
-            <select
-              id="account"
-              value={accountId}
-              onChange={(e) => setAccountId(e.target.value)}
-              required
-            >
-              <option value="">Select account...</option>
-              {accounts.map((account) => (
-                <option key={account.id} value={account.id}>
-                  {account.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="account">Account</Label>
+              <Select value={accountId} onValueChange={setAccountId}>
+                <SelectTrigger id="account">
+                  <SelectValue placeholder="Select account..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {accounts.map((account) => (
+                    <SelectItem key={account.id} value={account.id}>
+                      {account.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-          <div className="form-group">
-            <label htmlFor="date">Date</label>
-            <input
-              type="date"
-              id="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              required
-            />
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="date">Date</Label>
+              <Input
+                type="date"
+                id="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                required
+              />
+            </div>
 
-          <div className="form-group">
-            <label htmlFor="payee">Payee</label>
-            <input
-              type="text"
-              id="payee"
-              value={payee}
-              onChange={(e) => setPayee(e.target.value)}
-              placeholder="e.g., Grocery Store"
-              required
-            />
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="payee">Payee</Label>
+              <Input
+                type="text"
+                id="payee"
+                value={payee}
+                onChange={(e) => setPayee(e.target.value)}
+                placeholder="e.g., Grocery Store"
+                required
+              />
+            </div>
 
-          <div className="form-group">
-            <label htmlFor="amount">Amount</label>
-            <div className="amount-input-row">
-              <div className="amount-type-toggle">
-                <button
-                  type="button"
-                  className={`toggle-btn ${!isInflow ? 'active' : ''}`}
-                  onClick={() => setIsInflow(false)}
-                >
-                  Outflow
-                </button>
-                <button
-                  type="button"
-                  className={`toggle-btn ${isInflow ? 'active' : ''}`}
-                  onClick={() => setIsInflow(true)}
-                >
-                  Inflow
-                </button>
+            <div className="space-y-2">
+              <Label htmlFor="amount">Amount</Label>
+              <div className="flex gap-3 items-center">
+                <div className="flex border rounded-md overflow-hidden">
+                  <button
+                    type="button"
+                    className={cn(
+                      'px-3 py-2 text-sm font-medium transition-colors',
+                      !isInflow
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                    )}
+                    onClick={() => setIsInflow(false)}
+                  >
+                    Outflow
+                  </button>
+                  <button
+                    type="button"
+                    className={cn(
+                      'px-3 py-2 text-sm font-medium transition-colors border-l',
+                      isInflow
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                    )}
+                    onClick={() => setIsInflow(true)}
+                  >
+                    Inflow
+                  </button>
+                </div>
+                <div className="flex-1 flex items-center border rounded-md overflow-hidden focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+                  <span className="px-3 py-2 bg-muted text-muted-foreground font-medium">$</span>
+                  <Input
+                    type="number"
+                    id="amount"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    placeholder="0.00"
+                    step="0.01"
+                    min="0"
+                    required
+                    className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                  />
+                </div>
               </div>
-              <div className="amount-input-wrapper">
-                <span className="currency-symbol">$</span>
-                <input
-                  type="number"
-                  id="amount"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="0.00"
-                  step="0.01"
-                  min="0"
-                  required
-                />
-              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="memo">Memo (optional)</Label>
+              <Input
+                type="text"
+                id="memo"
+                value={memo}
+                onChange={(e) => setMemo(e.target.value)}
+                placeholder="Optional note"
+              />
             </div>
           </div>
 
-          <div className="form-group">
-            <label htmlFor="memo">Memo (optional)</label>
-            <input
-              type="text"
-              id="memo"
-              value={memo}
-              onChange={(e) => setMemo(e.target.value)}
-              placeholder="Optional note"
-            />
-          </div>
-
-          <div className="modal-actions">
-            <button type="button" className="cancel-btn" onClick={onClose}>
+          <DialogFooter className="mt-6">
+            <Button type="button" variant="outline" onClick={onClose}>
               Cancel
-            </button>
-            <button type="submit" className="primary-btn" disabled={isSubmitting}>
+            </Button>
+            <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? 'Adding...' : 'Add Transaction'}
-            </button>
-          </div>
+            </Button>
+          </DialogFooter>
         </form>
-
-        <style>{`
-          .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-          }
-
-          .modal-content {
-            background: white;
-            border-radius: 8px;
-            width: 100%;
-            max-width: 450px;
-            max-height: 90vh;
-            overflow-y: auto;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-          }
-
-          .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid #e5e5e5;
-          }
-
-          .modal-header h2 {
-            margin: 0;
-            font-size: 1.25rem;
-          }
-
-          .close-btn {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: #666;
-            padding: 0;
-            line-height: 1;
-          }
-
-          .close-btn:hover {
-            color: #333;
-          }
-
-          .modal-body {
-            padding: 1.5rem;
-          }
-
-          .error-message {
-            background-color: #fee;
-            color: #c00;
-            padding: 0.75rem;
-            border-radius: 4px;
-            margin-bottom: 1rem;
-          }
-
-          .form-group {
-            margin-bottom: 1rem;
-          }
-
-          .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-            color: #333;
-          }
-
-          .form-group input,
-          .form-group select {
-            width: 100%;
-            padding: 0.625rem;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 1rem;
-          }
-
-          .form-group input:focus,
-          .form-group select:focus {
-            outline: none;
-            border-color: #0066cc;
-            box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
-          }
-
-          .amount-input-row {
-            display: flex;
-            gap: 0.75rem;
-            align-items: center;
-          }
-
-          .amount-type-toggle {
-            display: flex;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            overflow: hidden;
-          }
-
-          .toggle-btn {
-            padding: 0.5rem 0.75rem;
-            border: none;
-            background: #f5f5f5;
-            cursor: pointer;
-            font-size: 0.875rem;
-            transition: background-color 0.2s;
-          }
-
-          .toggle-btn:first-child {
-            border-right: 1px solid #ccc;
-          }
-
-          .toggle-btn.active {
-            background: #0066cc;
-            color: white;
-          }
-
-          .toggle-btn:hover:not(.active) {
-            background: #e5e5e5;
-          }
-
-          .amount-input-wrapper {
-            display: flex;
-            align-items: center;
-            flex: 1;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            padding-left: 0.625rem;
-          }
-
-          .amount-input-wrapper:focus-within {
-            border-color: #0066cc;
-            box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
-          }
-
-          .currency-symbol {
-            color: #666;
-            font-size: 1rem;
-          }
-
-          .amount-input-wrapper input {
-            border: none;
-            padding-left: 0.25rem;
-          }
-
-          .amount-input-wrapper input:focus {
-            outline: none;
-            box-shadow: none;
-          }
-
-          .modal-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 0.75rem;
-            margin-top: 1.5rem;
-            padding-top: 1rem;
-            border-top: 1px solid #e5e5e5;
-          }
-
-          .cancel-btn {
-            padding: 0.625rem 1.25rem;
-            background: #f5f5f5;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.875rem;
-          }
-
-          .cancel-btn:hover {
-            background: #e5e5e5;
-          }
-
-          .primary-btn {
-            padding: 0.625rem 1.25rem;
-            background: #0066cc;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.875rem;
-          }
-
-          .primary-btn:hover:not(:disabled) {
-            background: #0055aa;
-          }
-
-          .primary-btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-          }
-        `}</style>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 

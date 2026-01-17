@@ -8,6 +8,18 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/lib/auth-context'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { cn } from '@/lib/utils'
 
 interface LocationState {
   message?: string
@@ -64,208 +76,100 @@ export function LoginPage() {
   }
 
   return (
-    <div className="login-page">
-      <div className="login-container">
-        <h1>Log In</h1>
+    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl text-center">Log In</CardTitle>
+          <CardDescription className="text-center">
+            Enter your email and password to access your account
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {redirectMessage && (
+            <div
+              className="mb-4 rounded-md bg-blue-50 p-3 text-sm text-blue-700 border border-blue-200"
+              role="status"
+            >
+              {redirectMessage}
+            </div>
+          )}
 
-        {redirectMessage && (
-          <div className="info-message" role="status">
-            {redirectMessage}
-          </div>
-        )}
+          {error && (
+            <div
+              className="mb-4 rounded-md bg-destructive/15 p-3 text-sm text-destructive"
+              role="alert"
+            >
+              {error}
+            </div>
+          )}
 
-        {error && (
-          <div className="error-message" role="alert">
-            {error}
-          </div>
-        )}
+          <form onSubmit={handleSubmit} noValidate className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value)
+                  if (validationErrors.email) {
+                    setValidationErrors((prev) => ({ ...prev, email: undefined }))
+                  }
+                }}
+                disabled={isLoading}
+                autoComplete="email"
+                autoFocus
+                placeholder="you@example.com"
+                className={cn(validationErrors.email && 'border-destructive')}
+                aria-invalid={!!validationErrors.email}
+                aria-describedby={validationErrors.email ? 'email-error' : undefined}
+              />
+              {validationErrors.email && (
+                <p id="email-error" className="text-sm text-destructive" role="alert">
+                  {validationErrors.email}
+                </p>
+              )}
+            </div>
 
-        <form onSubmit={handleSubmit} noValidate>
-          <div className="form-group">
-            <label htmlFor="email">Email</label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value)
-                if (validationErrors.email) {
-                  setValidationErrors((prev) => ({ ...prev, email: undefined }))
-                }
-              }}
-              disabled={isLoading}
-              autoComplete="email"
-              autoFocus
-              aria-invalid={!!validationErrors.email}
-              aria-describedby={validationErrors.email ? 'email-error' : undefined}
-            />
-            {validationErrors.email && (
-              <span id="email-error" className="field-error" role="alert">
-                {validationErrors.email}
-              </span>
-            )}
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value)
+                  if (validationErrors.password) {
+                    setValidationErrors((prev) => ({ ...prev, password: undefined }))
+                  }
+                }}
+                disabled={isLoading}
+                autoComplete="current-password"
+                className={cn(validationErrors.password && 'border-destructive')}
+                aria-invalid={!!validationErrors.password}
+                aria-describedby={validationErrors.password ? 'password-error' : undefined}
+              />
+              {validationErrors.password && (
+                <p id="password-error" className="text-sm text-destructive" role="alert">
+                  {validationErrors.password}
+                </p>
+              )}
+            </div>
 
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value)
-                if (validationErrors.password) {
-                  setValidationErrors((prev) => ({ ...prev, password: undefined }))
-                }
-              }}
-              disabled={isLoading}
-              autoComplete="current-password"
-              aria-invalid={!!validationErrors.password}
-              aria-describedby={validationErrors.password ? 'password-error' : undefined}
-            />
-            {validationErrors.password && (
-              <span id="password-error" className="field-error" role="alert">
-                {validationErrors.password}
-              </span>
-            )}
-          </div>
-
-          <button type="submit" disabled={isLoading} className="submit-button">
-            {isLoading ? 'Logging in...' : 'Log In'}
-          </button>
-        </form>
-
-        <p className="auth-link">
-          Don&apos;t have an account? <Link to="/register">Register</Link>
-        </p>
-      </div>
-
-      <style>{`
-        .login-page {
-          min-height: 100vh;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 1rem;
-          background-color: #f5f5f5;
-        }
-
-        .login-container {
-          width: 100%;
-          max-width: 400px;
-          padding: 2rem;
-          background: white;
-          border-radius: 8px;
-          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .login-container h1 {
-          margin: 0 0 1.5rem;
-          text-align: center;
-          font-size: 1.5rem;
-          color: #333;
-        }
-
-        .info-message {
-          padding: 0.75rem;
-          margin-bottom: 1rem;
-          background-color: #e7f3ff;
-          border: 1px solid #b8daff;
-          border-radius: 4px;
-          color: #004085;
-          font-size: 0.875rem;
-        }
-
-        .error-message {
-          padding: 0.75rem;
-          margin-bottom: 1rem;
-          background-color: #fee;
-          border: 1px solid #fcc;
-          border-radius: 4px;
-          color: #c00;
-          font-size: 0.875rem;
-        }
-
-        .form-group {
-          margin-bottom: 1rem;
-        }
-
-        .form-group label {
-          display: block;
-          margin-bottom: 0.25rem;
-          font-weight: 500;
-          color: #333;
-        }
-
-        .form-group input {
-          width: 100%;
-          padding: 0.625rem;
-          border: 1px solid #ccc;
-          border-radius: 4px;
-          font-size: 1rem;
-          box-sizing: border-box;
-        }
-
-        .form-group input:focus {
-          outline: none;
-          border-color: #0066cc;
-          box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
-        }
-
-        .form-group input:disabled {
-          background-color: #f5f5f5;
-          cursor: not-allowed;
-        }
-
-        .form-group input[aria-invalid="true"] {
-          border-color: #c00;
-        }
-
-        .field-error {
-          display: block;
-          margin-top: 0.25rem;
-          color: #c00;
-          font-size: 0.875rem;
-        }
-
-        .submit-button {
-          width: 100%;
-          padding: 0.75rem;
-          background-color: #0066cc;
-          color: white;
-          border: none;
-          border-radius: 4px;
-          font-size: 1rem;
-          font-weight: 500;
-          cursor: pointer;
-          margin-top: 0.5rem;
-        }
-
-        .submit-button:hover:not(:disabled) {
-          background-color: #0055aa;
-        }
-
-        .submit-button:disabled {
-          background-color: #ccc;
-          cursor: not-allowed;
-        }
-
-        .auth-link {
-          margin-top: 1.5rem;
-          text-align: center;
-          color: #666;
-          font-size: 0.875rem;
-        }
-
-        .auth-link a {
-          color: #0066cc;
-          text-decoration: none;
-        }
-
-        .auth-link a:hover {
-          text-decoration: underline;
-        }
-      `}</style>
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? 'Logging in...' : 'Log In'}
+            </Button>
+          </form>
+        </CardContent>
+        <CardFooter className="justify-center">
+          <p className="text-sm text-muted-foreground">
+            Don&apos;t have an account?{' '}
+            <Link to="/register" className="text-primary hover:underline">
+              Register
+            </Link>
+          </p>
+        </CardFooter>
+      </Card>
     </div>
   )
 }

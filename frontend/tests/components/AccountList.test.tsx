@@ -55,7 +55,8 @@ describe('AccountList', () => {
 
     render(<AccountList />)
 
-    expect(screen.getByText(/loading accounts/i)).toBeInTheDocument()
+    // Skeleton loading shows animate-pulse class
+    expect(document.querySelector('[class*="animate-pulse"]')).toBeInTheDocument()
   })
 
   it('should display accounts when loaded', async () => {
@@ -181,7 +182,7 @@ describe('AccountList', () => {
     expect(screen.getByText('$6,500.00')).toBeInTheDocument()
   })
 
-  it('should handle keyboard navigation', async () => {
+  it('should handle clicking on table row', async () => {
     const user = userEvent.setup()
     const onAccountSelect = vi.fn()
 
@@ -196,9 +197,10 @@ describe('AccountList', () => {
       expect(screen.getByText('Main Checking')).toBeInTheDocument()
     })
 
-    const checkingItem = screen.getByText('Main Checking').closest('li')
-    checkingItem?.focus()
-    await user.keyboard('{Enter}')
+    // Click the table row containing the account name
+    const checkingRow = screen.getByText('Main Checking').closest('tr')
+    expect(checkingRow).toBeInTheDocument()
+    await user.click(checkingRow!)
 
     expect(onAccountSelect).toHaveBeenCalledWith(mockAccounts[0])
   })

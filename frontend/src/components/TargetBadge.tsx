@@ -6,6 +6,7 @@
  */
 
 import type { TargetType } from '@/types/target'
+import { cn } from '@/lib/utils'
 
 interface TargetBadgeProps {
   targetType: TargetType
@@ -55,6 +56,12 @@ function getStatus(underfunded?: string): 'underfunded' | 'funded' | 'none' {
   return amount > 0 ? 'underfunded' : 'funded'
 }
 
+const statusStyles = {
+  none: 'bg-muted text-muted-foreground hover:bg-muted/80',
+  underfunded: 'bg-orange-100 text-orange-600 hover:bg-orange-200',
+  funded: 'bg-green-100 text-green-600 hover:bg-green-200',
+}
+
 export function TargetBadge({ targetType, underfunded, onClick }: TargetBadgeProps) {
   const status = getStatus(underfunded)
   const icon = getTargetIcon(targetType)
@@ -62,63 +69,16 @@ export function TargetBadge({ targetType, underfunded, onClick }: TargetBadgePro
 
   return (
     <span
-      className={`target-badge ${status} ${onClick ? 'clickable' : ''}`}
+      className={cn(
+        'inline-flex items-center gap-1 py-0.5 px-2 rounded-full text-xs font-medium whitespace-nowrap',
+        statusStyles[status],
+        onClick && 'cursor-pointer'
+      )}
       onClick={onClick}
-      title={`${label}${underfunded ? ` - €${underfunded} underfunded` : ''}`}
+      title={`${label}${underfunded ? ` - $${underfunded} underfunded` : ''}`}
     >
-      <span className="badge-icon">{icon}</span>
-      <span className="badge-label">{label}</span>
-
-      <style>{`
-        .target-badge {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.25rem;
-          padding: 0.125rem 0.5rem;
-          border-radius: 12px;
-          font-size: 0.75rem;
-          font-weight: 500;
-          background: #f0f0f0;
-          color: #666;
-          white-space: nowrap;
-        }
-
-        .target-badge.clickable {
-          cursor: pointer;
-        }
-
-        .target-badge.clickable:hover {
-          background: #e0e0e0;
-        }
-
-        .target-badge.underfunded {
-          background: #fff3e0;
-          color: #f57c00;
-        }
-
-        .target-badge.underfunded.clickable:hover {
-          background: #ffe0b2;
-        }
-
-        .target-badge.funded {
-          background: #e8f5e9;
-          color: #388e3c;
-        }
-
-        .target-badge.funded.clickable:hover {
-          background: #c8e6c9;
-        }
-
-        .badge-icon {
-          font-size: 0.75rem;
-        }
-
-        .badge-label {
-          font-size: 0.6875rem;
-          text-transform: uppercase;
-          letter-spacing: 0.02em;
-        }
-      `}</style>
+      <span className="text-xs">{icon}</span>
+      <span className="text-[11px] uppercase tracking-wide">{label}</span>
     </span>
   )
 }

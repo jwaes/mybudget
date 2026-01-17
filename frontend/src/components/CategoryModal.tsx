@@ -7,6 +7,24 @@
 import { useState, useEffect, type FormEvent } from 'react'
 import type { Category, CategoryGroup, CategoryCreate, CategoryUpdate } from '@/types/category'
 import { categoryService } from '@/services/categoryService'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 interface CategoryModalProps {
   existingCategory?: Category | null
@@ -49,104 +67,24 @@ export function CategoryModal({
     }
   }, [isOpen, existingCategory, defaultGroupId, groups])
 
-  if (!isOpen) return null
-
   // Show message if no groups exist
-  if (groups.length === 0) {
+  if (groups.length === 0 && isOpen) {
     return (
-      <div className="modal-overlay" onClick={onClose}>
-        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-          <header className="modal-header">
-            <h2>Create Category</h2>
-            <button className="close-btn" onClick={onClose} aria-label="Close">
-              &times;
-            </button>
-          </header>
-          <div className="modal-body">
-            <p className="no-groups-message">
+      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create Category</DialogTitle>
+            <DialogDescription className="text-center py-4">
               Please create a category group first before adding categories.
-            </p>
-            <div className="modal-actions">
-              <button className="cancel-btn" onClick={onClose}>
-                Close
-              </button>
-            </div>
-          </div>
-
-          <style>{`
-            .modal-overlay {
-              position: fixed;
-              inset: 0;
-              background: rgba(0, 0, 0, 0.5);
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              z-index: 1000;
-            }
-
-            .modal-content {
-              background: white;
-              border-radius: 8px;
-              width: 100%;
-              max-width: 420px;
-              box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
-            }
-
-            .modal-header {
-              display: flex;
-              align-items: center;
-              padding: 1rem 1.5rem;
-              border-bottom: 1px solid #eee;
-            }
-
-            .modal-header h2 {
-              margin: 0;
-              font-size: 1.25rem;
-              font-weight: 600;
-            }
-
-            .close-btn {
-              margin-left: auto;
-              background: none;
-              border: none;
-              font-size: 1.5rem;
-              cursor: pointer;
-              color: #666;
-              padding: 0.25rem 0.5rem;
-            }
-
-            .modal-body {
-              padding: 1.5rem;
-            }
-
-            .no-groups-message {
-              color: #666;
-              text-align: center;
-              margin-bottom: 1.5rem;
-            }
-
-            .modal-actions {
-              display: flex;
-              justify-content: flex-end;
-            }
-
-            .cancel-btn {
-              padding: 0.75rem 1.5rem;
-              border-radius: 4px;
-              font-size: 0.875rem;
-              font-weight: 500;
-              cursor: pointer;
-              background: white;
-              border: 1px solid #ccc;
-              color: #666;
-            }
-
-            .cancel-btn:hover {
-              background: #f5f5f5;
-            }
-          `}</style>
-        </div>
-      </div>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={onClose}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     )
   }
 
@@ -225,223 +163,81 @@ export function CategoryModal({
   const isLoading = isSubmitting || isDeleting
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <header className="modal-header">
-          <h2>{existingCategory ? 'Edit Category' : 'Create Category'}</h2>
-          <button className="close-btn" onClick={onClose} aria-label="Close">
-            &times;
-          </button>
-        </header>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>
+            {existingCategory ? 'Edit Category' : 'Create Category'}
+          </DialogTitle>
+        </DialogHeader>
 
         <form onSubmit={handleSubmit}>
-          {error && <div className="error-message">{error}</div>}
+          {error && (
+            <div className="mb-4 rounded-md bg-destructive/15 p-3 text-sm text-destructive">
+              {error}
+            </div>
+          )}
 
-          <div className="form-group">
-            <label htmlFor="categoryName">Category Name</label>
-            <input
-              id="categoryName"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g., Rent, Groceries"
-              disabled={isLoading}
-              required
-              autoFocus
-            />
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="categoryName">Category Name</Label>
+              <Input
+                id="categoryName"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g., Rent, Groceries"
+                disabled={isLoading}
+                required
+                autoFocus
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="categoryGroup">Category Group</Label>
+              <Select
+                value={groupId}
+                onValueChange={setGroupId}
+                disabled={isLoading}
+              >
+                <SelectTrigger id="categoryGroup">
+                  <SelectValue placeholder="Select a group..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {groups.map((group) => (
+                    <SelectItem key={group.id} value={group.id}>
+                      {group.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
-          <div className="form-group">
-            <label htmlFor="categoryGroup">Category Group</label>
-            <select
-              id="categoryGroup"
-              value={groupId}
-              onChange={(e) => setGroupId(e.target.value)}
-              disabled={isLoading}
-              required
-            >
-              {groups.map((group) => (
-                <option key={group.id} value={group.id}>
-                  {group.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="modal-actions">
+          <DialogFooter className="mt-6 flex justify-between gap-2">
             {existingCategory && onDelete && (
-              <button
+              <Button
                 type="button"
-                className="delete-btn"
+                variant="outline"
+                className="border-destructive text-destructive hover:bg-destructive/10"
                 onClick={handleDelete}
                 disabled={isLoading}
               >
                 {isDeleting ? 'Deleting...' : 'Delete'}
-              </button>
+              </Button>
             )}
-            <div className="right-actions">
-              <button type="button" className="cancel-btn" onClick={onClose} disabled={isLoading}>
+            <div className="flex gap-2 ml-auto">
+              <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
                 Cancel
-              </button>
-              <button type="submit" className="save-btn" disabled={isLoading}>
+              </Button>
+              <Button type="submit" disabled={isLoading}>
                 {isSubmitting ? 'Saving...' : existingCategory ? 'Update' : 'Create'}
-              </button>
+              </Button>
             </div>
-          </div>
+          </DialogFooter>
         </form>
-
-        <style>{`
-          .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-          }
-
-          .modal-content {
-            background: white;
-            border-radius: 8px;
-            width: 100%;
-            max-width: 420px;
-            max-height: 90vh;
-            overflow-y: auto;
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
-          }
-
-          .modal-header {
-            display: flex;
-            align-items: center;
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid #eee;
-          }
-
-          .modal-header h2 {
-            margin: 0;
-            font-size: 1.25rem;
-            font-weight: 600;
-          }
-
-          .close-btn {
-            margin-left: auto;
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: #666;
-            padding: 0.25rem 0.5rem;
-          }
-
-          .close-btn:hover {
-            color: #333;
-          }
-
-          form {
-            padding: 1.5rem;
-          }
-
-          .error-message {
-            background: #fee;
-            color: #c00;
-            padding: 0.75rem 1rem;
-            border-radius: 4px;
-            margin-bottom: 1rem;
-            font-size: 0.875rem;
-          }
-
-          .form-group {
-            margin-bottom: 1.5rem;
-          }
-
-          .form-group > label {
-            display: block;
-            font-weight: 500;
-            margin-bottom: 0.5rem;
-            color: #333;
-          }
-
-          .form-group input,
-          .form-group select {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 1rem;
-            box-sizing: border-box;
-          }
-
-          .form-group input:focus,
-          .form-group select:focus {
-            border-color: #0066cc;
-            outline: none;
-            box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
-          }
-
-          .modal-actions {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 1.5rem;
-            padding-top: 1rem;
-            border-top: 1px solid #eee;
-          }
-
-          .right-actions {
-            display: flex;
-            gap: 0.75rem;
-            margin-left: auto;
-          }
-
-          .cancel-btn,
-          .save-btn,
-          .delete-btn {
-            padding: 0.75rem 1.5rem;
-            border-radius: 4px;
-            font-size: 0.875rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.15s ease;
-          }
-
-          .cancel-btn {
-            background: white;
-            border: 1px solid #ccc;
-            color: #666;
-          }
-
-          .cancel-btn:hover:not(:disabled) {
-            background: #f5f5f5;
-          }
-
-          .save-btn {
-            background: #0066cc;
-            border: none;
-            color: white;
-          }
-
-          .save-btn:hover:not(:disabled) {
-            background: #0052a3;
-          }
-
-          .delete-btn {
-            background: white;
-            border: 1px solid #c00;
-            color: #c00;
-          }
-
-          .delete-btn:hover:not(:disabled) {
-            background: #fee;
-          }
-
-          button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-          }
-        `}</style>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 
