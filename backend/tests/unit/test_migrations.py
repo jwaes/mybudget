@@ -91,5 +91,22 @@ async def test_users_table_constraints(db_session: AsyncSession) -> None:
     # Primary key constraint
     assert any("pk" in name for name in constraints.keys())
 
-    # Unique constraint on email
-    assert any("email" in name.lower() for name in constraints.keys())
+    # Unique constraint on email - can be either a constraint or via unique index
+    # SQLAlchemy implements unique=True via unique index, so check indexes too
+    email_constraint_exists = any("email" in name.lower() for name in constraints.keys())
+
+    if not email_constraint_exists:
+        # Check for unique index instead
+        index_result = await db_session.execute(
+            text(
+                """
+                SELECT indexname, indexdef
+                FROM pg_indexes
+                WHERE tablename = 'users' AND indexdef LIKE '%UNIQUE%'
+                ORDER BY indexname
+                """
+            )
+        )
+        indexes = {row[0]: row[1] for row in index_result.fetchall()}
+        email_index_exists = any("email" in name.lower() for name in indexes.keys())
+        assert email_index_exists, "Email should have either a unique constraint or unique index"

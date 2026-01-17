@@ -37,12 +37,24 @@ async def validation_exception_handler(
     request: Request, exc: RequestValidationError
 ) -> JSONResponse:
     """Handle validation errors with detailed error messages."""
+    # Convert errors to JSON-serializable format
+    errors = []
+    for error in exc.errors():
+        err = {
+            "type": error.get("type"),
+            "loc": error.get("loc"),
+            "msg": error.get("msg"),
+            "input": error.get("input"),
+        }
+        # Don't include 'ctx' as it may contain non-serializable objects
+        errors.append(err)
+
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content={
             "detail": "Validation error",
             "error_code": "VALIDATION_ERROR",
-            "errors": exc.errors(),
+            "errors": errors,
         },
     )
 
@@ -93,9 +105,38 @@ async def health_check() -> dict[str, str]:
 
 
 # API routers
-from mybudget.api import auth
+from mybudget.api import (
+    accounts,
+    auth,
+    budget,
+    categories,
+    reconciliation,
+    targets,
+    transactions,
+)
 
 app.include_router(auth.router, prefix=settings.API_V1_PREFIX, tags=["Auth"])
-# Additional routers will be added here:
-# app.include_router(accounts_router, prefix=settings.API_V1_PREFIX, tags=["Accounts"])
-# etc.
+app.include_router(
+    accounts.router, prefix=f"{settings.API_V1_PREFIX}/accounts", tags=["Accounts"]
+)
+app.include_router(
+    transactions.router,
+    prefix=f"{settings.API_V1_PREFIX}/transactions",
+    tags=["Transactions"],
+)
+app.include_router(
+    categories.router,
+    prefix=f"{settings.API_V1_PREFIX}/categories",
+    tags=["Categories"],
+)
+app.include_router(
+    targets.router, prefix=f"{settings.API_V1_PREFIX}/targets", tags=["Targets"]
+)
+app.include_router(
+    budget.router, prefix=f"{settings.API_V1_PREFIX}/budget", tags=["Budget"]
+)
+app.include_router(
+    reconciliation.router,
+    prefix=f"{settings.API_V1_PREFIX}/reconciliations",
+    tags=["Reconciliation"],
+)

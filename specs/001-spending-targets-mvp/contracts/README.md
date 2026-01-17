@@ -4,6 +4,9 @@ This directory contains OpenAPI 3.0 specifications for all MyBudget API endpoint
 
 ## Contract Files
 
+### ✅ auth.yaml (Complete)
+Authentication API - user registration, login, logout, session management.
+
 ### ✅ targets.yaml (Complete)
 Spending targets API - create, update, delete targets, calculate underfunded amounts.
 

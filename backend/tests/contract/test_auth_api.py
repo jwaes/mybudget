@@ -163,9 +163,45 @@ async def test_logout(client: AsyncClient) -> None:
 
 @pytest.mark.contract
 @pytest.mark.asyncio
-async def test_get_current_user_not_implemented(client: AsyncClient) -> None:
-    """Test GET /api/me returns 501 (not yet implemented)."""
+async def test_get_current_user_unauthorized(client: AsyncClient) -> None:
+    """Test GET /api/me returns 401 without authentication."""
     response = await client.get("/api/me")
 
-    # Should return 501 until session management is implemented
-    assert response.status_code == 501
+    # Should return 401 when not authenticated
+    assert response.status_code == 401
+
+
+@pytest.mark.contract
+@pytest.mark.asyncio
+async def test_get_current_user_success(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    """Test GET /api/me returns 200 with valid session."""
+    # Create user
+    user = User(
+        email="sessionuser@example.com",
+        password_hash=hash_password("TestPassword123!"),
+        timezone="Europe/Brussels",
+    )
+    db_session.add(user)
+    await db_session.flush()
+
+    # Login to get session cookie
+    login_response = await client.post(
+        "/api/login",
+        json={
+            "email": "sessionuser@example.com",
+            "password": "TestPassword123!",
+        },
+    )
+    assert login_response.status_code == 200
+
+    # Access /me with the session cookie
+    response = await client.get("/api/me")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["email"] == "sessionuser@example.com"
+    assert data["timezone"] == "Europe/Brussels"
+    assert "id" in data
+    assert "password" not in data

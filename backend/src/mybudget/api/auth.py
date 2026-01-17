@@ -3,12 +3,21 @@ Authentication API endpoints.
 
 Handles user login, logout, and current user retrieval.
 """
-from fastapi import APIRouter, Depends, HTTPException, Response, status
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
+from fastapi import APIRouter, HTTPException, Response, status
+from sqlalchemy import select
+
+from mybudget.api.dependencies import CurrentUser
 from mybudget.db.session import DBSession
 from mybudget.lib.auth import hash_password, verify_password
+from mybudget.lib.session import (
+    SESSION_COOKIE_HTTPONLY,
+    SESSION_COOKIE_MAX_AGE,
+    SESSION_COOKIE_NAME,
+    SESSION_COOKIE_SAMESITE,
+    SESSION_COOKIE_SECURE,
+    create_session_token,
+)
 from mybudget.models.user import User
 from mybudget.schemas.user import UserCreate, UserLogin, UserResponse
 
@@ -68,7 +77,7 @@ async def login(
         db: Database session
 
     Returns:
-        Success message
+        Success message with user_id
 
     Raises:
         401: Invalid credentials
@@ -84,9 +93,16 @@ async def login(
             detail="Invalid email or password",
         )
 
-    # TODO: Create session and set cookie
-    # For now, just return success
-    # In T028, we'll implement proper session management
+    # Create session token and set cookie
+    session_token = create_session_token(user.id)
+    response.set_cookie(
+        key=SESSION_COOKIE_NAME,
+        value=session_token,
+        max_age=SESSION_COOKIE_MAX_AGE,
+        httponly=SESSION_COOKIE_HTTPONLY,
+        samesite=SESSION_COOKIE_SAMESITE,
+        secure=SESSION_COOKIE_SECURE,
+    )
 
     return {"message": "Login successful", "user_id": str(user.id)}
 
@@ -102,19 +118,24 @@ async def logout(response: Response) -> dict[str, str]:
     Returns:
         Success message
     """
-    # TODO: Destroy session and clear cookie
-    # For now, just return success
+    # Clear session cookie
+    response.delete_cookie(
+        key=SESSION_COOKIE_NAME,
+        httponly=SESSION_COOKIE_HTTPONLY,
+        samesite=SESSION_COOKIE_SAMESITE,
+        secure=SESSION_COOKIE_SECURE,
+    )
 
     return {"message": "Logout successful"}
 
 
 @router.get("/me", response_model=UserResponse)
-async def get_current_user(db: DBSession) -> User:
+async def get_me(current_user: CurrentUser) -> User:
     """
     Get current authenticated user.
 
     Args:
-        db: Database session
+        current_user: The authenticated user from session
 
     Returns:
         Current user
@@ -122,10 +143,4 @@ async def get_current_user(db: DBSession) -> User:
     Raises:
         401: Not authenticated
     """
-    # TODO: Get user from session
-    # For now, raise not implemented
-
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Session management not yet implemented",
-    )
+    return current_user

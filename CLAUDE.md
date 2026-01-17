@@ -3,6 +3,10 @@
 Auto-generated from all feature plans. Last updated: 2026-01-16
 
 ## Active Technologies
+- Python 3.11 (backend), TypeScript 5.8 (frontend) + FastAPI (async web framework), SQLAlchemy 2.0 (ORM), Alembic (migrations), Pydantic V2 (validation/serialization); React 19, Vite, React Hook Form (frontend) (001-spending-targets-mvp)
+- PostgreSQL 15+ (relational database for financial data integrity, ACID transactions) (001-spending-targets-mvp)
+- TypeScript 5.8 (frontend) + React 19, shadcn/ui (New York style), Tailwind CSS v3.x, Radix UI primitives, lucide-react (icons), React Router v7 (002-shadcn-ui-migration)
+- N/A (frontend-only migration, no data model changes) (002-shadcn-ui-migration)
 
 - Python 3.11 + FastAPI (async web framework), SQLAlchemy 2.0 (ORM), Alembic (migrations), Pydantic V2 (validation/serialization) (001-spending-targets-mvp)
 
@@ -22,6 +26,8 @@ cd src [ONLY COMMANDS FOR ACTIVE TECHNOLOGIES][ONLY COMMANDS FOR ACTIVE TECHNOLO
 Python 3.11: Follow standard conventions
 
 ## Recent Changes
+- 002-shadcn-ui-migration: Added TypeScript 5.8 (frontend) + React 19, shadcn/ui (New York style), Tailwind CSS v3.x, Radix UI primitives, lucide-react (icons), React Router v7
+- 001-spending-targets-mvp: Added Python 3.11 (backend), TypeScript 5.8 (frontend) + FastAPI (async web framework), SQLAlchemy 2.0 (ORM), Alembic (migrations), Pydantic V2 (validation/serialization); React 19, Vite, React Hook Form (frontend)
 
 - 001-spending-targets-mvp: Added Python 3.11 + FastAPI (async web framework), SQLAlchemy 2.0 (ORM), Alembic (migrations), Pydantic V2 (validation/serialization)
 

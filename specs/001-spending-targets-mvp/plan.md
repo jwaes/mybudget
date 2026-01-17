@@ -1,6 +1,6 @@
 # Implementation Plan: MyBudget MVP - Spending Targets
 
-**Branch**: `001-spending-targets-mvp` | **Date**: 2026-01-16 | **Spec**: [spec.md](./spec.md)
+**Branch**: `001-spending-targets-mvp` | **Date**: 2026-01-16 (Updated 2026-01-17) | **Spec**: [spec.md](./spec.md)
 **Input**: Feature specification from `/specs/001-spending-targets-mvp/spec.md`
 
 ## Summary
@@ -9,12 +9,14 @@ Build a bank-sync-first personal budgeting application that helps users manage s
 
 Technical approach: Python web application with a relational database for transactional data, RESTful API backend, and modern web frontend. Focus on precise financial calculations, data integrity through reconciliation, and fast user workflows (<60 seconds to fully fund a budget).
 
+**Update 2026-01-17**: Added User Story 0 (Authentication UI) - login and registration pages for user authentication before accessing budget features.
+
 ## Technical Context
 
-**Language/Version**: Python 3.11
-**Primary Dependencies**: FastAPI (async web framework), SQLAlchemy 2.0 (ORM), Alembic (migrations), Pydantic V2 (validation/serialization)
+**Language/Version**: Python 3.11 (backend), TypeScript 5.8 (frontend)
+**Primary Dependencies**: FastAPI (async web framework), SQLAlchemy 2.0 (ORM), Alembic (migrations), Pydantic V2 (validation/serialization); React 19, Vite, React Hook Form (frontend)
 **Storage**: PostgreSQL 15+ (relational database for financial data integrity, ACID transactions)
-**Testing**: pytest (test framework), pytest-cov (coverage), pytest-asyncio (async tests), Faker (test data generation)
+**Testing**: pytest (test framework), pytest-cov (coverage), pytest-asyncio (async tests), Faker (test data generation); Vitest + React Testing Library (frontend)
 **Target Platform**: Web application (browser-based UI + REST API backend)
 **Project Type**: Web application (backend API + frontend client)
 **Performance Goals**: <2 seconds for all operations (per SC-010 assumption), <200ms API response p95, real-time UI updates for funding actions
@@ -23,6 +25,7 @@ Technical approach: Python web application with a relational database for transa
 - Data integrity: reconciliation must catch any balance discrepancies
 - Timezone-aware: month boundaries respect user's local timezone
 - Single-user MVP: no multi-tenancy complexity
+- 30-minute session timeout for security
 **Scale/Scope**:
 - 1-5 bank accounts per user
 - 100-500 transactions/month
@@ -148,18 +151,16 @@ def calculate_underfunded(
 specs/001-spending-targets-mvp/
 ├── plan.md              # This file (/speckit.plan command output)
 ├── spec.md              # Feature specification (completed)
-├── research.md          # Phase 0 output (technology decisions)
-├── data-model.md        # Phase 1 output (entity designs)
-├── quickstart.md        # Phase 1 output (dev setup guide)
+├── research.md          # Phase 0 output (technology decisions) ✅
+├── data-model.md        # Phase 1 output (entity designs) ✅
+├── quickstart.md        # Phase 1 output (dev setup guide) ✅
 ├── contracts/           # Phase 1 output (OpenAPI schemas)
-│   ├── accounts.yaml
-│   ├── transactions.yaml
-│   ├── categories.yaml
-│   ├── targets.yaml
-│   └── reconciliation.yaml
+│   ├── auth.yaml        # Authentication endpoints (NEW)
+│   ├── targets.yaml     # Spending targets ✅
+│   └── README.md        # Contract documentation ✅
 ├── checklists/
-│   └── requirements.md  # Spec quality checklist (completed)
-└── tasks.md             # Phase 2 output (/speckit.tasks command)
+│   └── requirements.md  # Spec quality checklist (completed) ✅
+└── tasks.md             # Phase 2 output (/speckit.tasks command) - TO BE REGENERATED
 ```
 
 ### Source Code (repository root)
@@ -168,126 +169,122 @@ specs/001-spending-targets-mvp/
 # Web application structure (backend + frontend)
 
 backend/
-├── src/
-│   ├── mybudget/
+├── src/mybudget/
+│   ├── __init__.py
+│   ├── main.py                  # FastAPI app entry point
+│   ├── config.py                # Settings (env vars, DB config)
+│   ├── models/                  # SQLAlchemy ORM models
 │   │   ├── __init__.py
-│   │   ├── main.py                  # FastAPI app entry point
-│   │   ├── config.py                # Settings (env vars, DB config)
-│   │   ├── models/                  # SQLAlchemy ORM models
-│   │   │   ├── __init__.py
-│   │   │   ├── account.py           # Account model
-│   │   │   ├── transaction.py       # Transaction model
-│   │   │   ├── category.py          # Category, CategoryGroup models
-│   │   │   ├── target.py            # CategoryTarget model
-│   │   │   ├── assignment.py        # Assignment model (audit trail)
-│   │   │   ├── rule.py              # CategorizationRule model
-│   │   │   └── reconciliation.py    # Reconciliation model
-│   │   ├── schemas/                 # Pydantic schemas (API contracts)
-│   │   │   ├── __init__.py
-│   │   │   ├── account.py
-│   │   │   ├── transaction.py
-│   │   │   ├── category.py
-│   │   │   ├── target.py
-│   │   │   └── reconciliation.py
-│   │   ├── services/                # Business logic layer
-│   │   │   ├── __init__.py
-│   │   │   ├── account_service.py
-│   │   │   ├── transaction_service.py
-│   │   │   ├── category_service.py
-│   │   │   ├── target_service.py    # Underfunded calculations
-│   │   │   ├── funding_service.py   # Fund underfunded logic
-│   │   │   ├── reconciliation_service.py
-│   │   │   └── sync_service.py      # Bank sync integration
-│   │   ├── api/                     # FastAPI routes
-│   │   │   ├── __init__.py
-│   │   │   ├── accounts.py
-│   │   │   ├── transactions.py
-│   │   │   ├── categories.py
-│   │   │   ├── targets.py
-│   │   │   ├── budget.py            # Month view endpoint
-│   │   │   └── reconciliation.py
-│   │   ├── lib/                     # Shared utilities
-│   │   │   ├── __init__.py
-│   │   │   ├── date_utils.py        # Month boundaries, timezone
-│   │   │   ├── decimal_utils.py     # Financial precision helpers
-│   │   │   └── exceptions.py        # Custom exceptions
-│   │   └── db/                      # Database utilities
-│   │       ├── __init__.py
-│   │       ├── session.py           # DB session management
-│   │       └── base.py              # SQLAlchemy Base
-│   └── migrations/                  # Alembic migrations
-│       ├── alembic.ini
-│       ├── env.py
-│       └── versions/
+│   │   ├── user.py              # User model ✅
+│   │   ├── account.py           # Account model ✅
+│   │   ├── transaction.py       # Transaction model ✅
+│   │   ├── category.py          # Category, CategoryGroup models ✅
+│   │   ├── categorization_rule.py # CategorizationRule model ✅
+│   │   └── [pending: target, assignment, reconciliation]
+│   ├── schemas/                 # Pydantic schemas (API contracts)
+│   │   ├── __init__.py
+│   │   ├── user.py              # User schemas ✅
+│   │   ├── account.py           # Account schemas ✅
+│   │   ├── transaction.py       # Transaction schemas ✅
+│   │   ├── category.py          # Category schemas ✅
+│   │   └── [pending: target, reconciliation]
+│   ├── services/                # Business logic layer
+│   │   ├── __init__.py
+│   │   ├── account_service.py   # ✅
+│   │   ├── transaction_service.py # ✅
+│   │   ├── category_service.py  # ✅
+│   │   └── [pending: target, funding, reconciliation]
+│   ├── api/                     # FastAPI routes
+│   │   ├── __init__.py
+│   │   ├── auth.py              # Authentication endpoints ✅
+│   │   ├── accounts.py          # Account endpoints ✅
+│   │   ├── transactions.py      # Transaction endpoints ✅
+│   │   ├── categories.py        # Category endpoints ✅
+│   │   └── [pending: targets, budget, reconciliation]
+│   ├── lib/                     # Shared utilities
+│   │   ├── __init__.py
+│   │   ├── auth.py              # Password hashing ✅
+│   │   ├── session.py           # Session management ✅
+│   │   ├── date_utils.py        # Month boundaries, timezone ✅
+│   │   └── exceptions.py        # Custom exceptions ✅
+│   └── db/                      # Database utilities
+│       ├── __init__.py
+│       ├── session.py           # DB session management ✅
+│       └── base.py              # SQLAlchemy Base ✅
+├── migrations/                  # Alembic migrations ✅
 └── tests/
-    ├── unit/
-    │   ├── test_models/
-    │   │   ├── test_account.py
-    │   │   ├── test_transaction.py
-    │   │   ├── test_category.py
-    │   │   └── test_target.py       # Test underfunded calculations
-    │   ├── test_services/
-    │   │   ├── test_target_service.py
-    │   │   ├── test_funding_service.py
-    │   │   └── test_reconciliation_service.py
-    │   └── test_lib/
-    │       └── test_date_utils.py
-    ├── integration/
-    │   ├── test_api/
-    │   │   ├── test_accounts_api.py
-    │   │   ├── test_transactions_api.py
-    │   │   ├── test_categories_api.py
-    │   │   ├── test_targets_api.py
-    │   │   └── test_budget_api.py
-    │   ├── test_database/
-    │   │   └── test_repositories.py
-    │   └── test_user_journeys/
-    │       ├── test_setup_and_sync.py      # User Story 1
-    │       ├── test_organize_budget.py     # User Story 2
-    │       ├── test_reconciliation.py      # User Story 3
-    │       ├── test_set_targets.py         # User Story 4
-    │       ├── test_funding_guidance.py    # User Story 5
-    │       └── test_month_rollover.py      # User Story 6
-    └── contract/
-        └── test_api_contracts.py
+    ├── unit/                    # Unit tests ✅
+    ├── integration/             # Integration tests ✅
+    └── contract/                # API contract tests ✅
 
 frontend/
 ├── src/
 │   ├── components/
-│   │   ├── AccountList.tsx          # Account overview
-│   │   ├── TransactionInbox.tsx     # Approve/categorize transactions
-│   │   ├── BudgetMonthView.tsx      # Main budget screen
-│   │   ├── CategoryRow.tsx          # Category with targets/underfunded
-│   │   ├── TargetModal.tsx          # Set/edit targets
-│   │   └── ReconcileModal.tsx       # Reconciliation workflow
+│   │   ├── AccountList.tsx      # ✅
+│   │   ├── TransactionInbox.tsx # ✅
+│   │   ├── CSVImport.tsx        # ✅
+│   │   └── [pending: BudgetMonthView, CategoryRow, TargetModal, ReconcileModal]
 │   ├── services/
-│   │   ├── api.ts                   # API client
-│   │   ├── accountService.ts
-│   │   ├── transactionService.ts
-│   │   ├── categoryService.ts
-│   │   ├── targetService.ts
-│   │   └── budgetService.ts
+│   │   ├── api.ts               # API client ✅
+│   │   ├── authService.ts       # ✅
+│   │   ├── accountService.ts    # ✅
+│   │   ├── transactionService.ts # ✅
+│   │   ├── categoryService.ts   # ✅
+│   │   └── [pending: targetService, budgetService]
 │   ├── pages/
-│   │   ├── Dashboard.tsx
-│   │   ├── Accounts.tsx
-│   │   ├── Transactions.tsx
-│   │   └── Budget.tsx               # Budget month view
+│   │   ├── Login.tsx            # PENDING (User Story 0)
+│   │   ├── Register.tsx         # PENDING (User Story 0)
+│   │   ├── Accounts.tsx         # ✅
+│   │   ├── Transactions.tsx     # ✅
+│   │   └── [pending: Dashboard, Budget]
+│   ├── types/
+│   │   ├── auth.ts              # ✅
+│   │   ├── account.ts           # ✅
+│   │   ├── transaction.ts       # ✅
+│   │   ├── category.ts          # ✅
+│   │   └── [pending: target, budget]
 │   └── lib/
-│       ├── formatters.ts            # Currency, date formatting
-│       └── calculations.ts          # Client-side calculations
+│       └── auth-context.tsx     # ✅
 └── tests/
-    ├── components/
-    ├── services/
-    └── e2e/                         # End-to-end tests (Playwright/Cypress)
-
-pyproject.toml                       # Python dependencies & tool config
-docker-compose.yml                   # Local dev environment (Postgres, etc.)
-.env.example                         # Environment variables template
-.gitignore
-README.md
+    ├── components/              # Component tests ✅
+    └── services/                # Service tests ✅
 ```
 
-**Structure Decision**: Web application with backend/frontend separation. Backend is a Python FastAPI REST API with PostgreSQL storage. Frontend is a modern web client (React/Vue/Svelte TBD in Phase 0 research). This structure supports the constitution's testing requirements (unit tests for backend logic, contract tests for API, integration tests for full workflows, E2E tests for UI).
+**Structure Decision**: Web application with backend/frontend separation. Backend is a Python FastAPI REST API with PostgreSQL storage. Frontend is React 19 with TypeScript. This structure supports the constitution's testing requirements (unit tests for backend logic, contract tests for API, integration tests for full workflows, E2E tests for UI).
+
+## Implementation Status
+
+### Completed
+
+**Phase 2 (Foundation)** - ✅ Complete:
+- User model, authentication endpoints (POST /register, POST /login, POST /logout, GET /me)
+- Password hashing (Argon2id via pwdlib)
+- Session management (itsdangerous signed cookies)
+- Frontend auth service and context
+- 91 backend tests, 10 frontend tests
+
+**Phase 3 (User Story 1)** - ✅ Complete:
+- Account, Transaction, Category, CategoryGroup, CategorizationRule models
+- All API endpoints for accounts, transactions, categories
+- Frontend services and components (AccountList, TransactionInbox, CSVImport)
+- Frontend pages (Accounts, Transactions)
+- 164 backend tests, 30 frontend tests passing (194 total)
+
+### Pending
+
+**User Story 0 - Authentication UI** (NEW - Added 2026-01-17):
+- Login page with email/password form (FR-AUTH-001)
+- Registration page with email/password/timezone form (FR-AUTH-002)
+- Error handling for invalid credentials (FR-AUTH-004)
+- Redirect logic after successful login (FR-AUTH-005)
+- Logout functionality (FR-AUTH-006)
+
+**User Stories 2-6** - Pending:
+- Budget month view (User Story 2)
+- Reconciliation workflow (User Story 3)
+- Spending targets (User Story 4)
+- Funding guidance (User Story 5)
+- Month rollover (User Story 6)
 
 ## Complexity Tracking
 
@@ -297,141 +294,48 @@ README.md
 
 ## Phase 0: Research & Technology Decisions
 
-### Research Topics
+**Status**: ✅ Complete
 
-1. **Frontend Framework Selection**
-   - Decision: NEEDS CLARIFICATION
-   - Options: React, Vue 3, Svelte
-   - Criteria: TypeScript support, form handling, testing ecosystem, bundle size
-   - Outcome: Will research and document in research.md
+Research findings documented in [research.md](./research.md):
 
-2. **Bank Sync Integration**
-   - Decision: NEEDS CLARIFICATION
-   - Options: Plaid, TrueLayer (Open Banking), mock/manual for MVP
-   - Criteria: Cost, compliance, ease of integration, European bank support
-   - Outcome: Will research and document in research.md
-
-3. **Authentication Strategy**
-   - Decision: NEEDS CLARIFICATION
-   - Options: Session-based (cookies), JWT, OAuth2
-   - Criteria: Security, simplicity, single-user MVP constraints
-   - Outcome: Will research and document in research.md
-
-4. **Decimal Precision Library**
-   - Decision: Python's built-in `decimal.Decimal`
-   - Rationale: Standard library, precise financial calculations, no external dependency
-   - Alternatives: None needed (standard choice for financial apps)
-
-5. **Database Migration Strategy**
-   - Decision: Alembic
-   - Rationale: Standard for SQLAlchemy, version-controlled schema changes
-   - Alternatives: None (de facto standard)
-
-6. **API Documentation**
-   - Decision: FastAPI's built-in OpenAPI/Swagger
-   - Rationale: Auto-generated from code, interactive docs, aligns with contract testing
-   - Alternatives: None needed (FastAPI includes this)
-
-### Research Outputs
-
-Research findings will be documented in `research.md` with the following structure:
-
-```markdown
-# Technology Research: MyBudget MVP
-
-## Frontend Framework
-- **Decision**: [React/Vue/Svelte]
-- **Rationale**: [why chosen]
-- **Alternatives Considered**: [what else was evaluated]
-- **Trade-offs**: [what we're gaining/losing]
-
-## Bank Sync Integration
-- **Decision**: [Plaid/TrueLayer/Mock]
-- **Rationale**: [why chosen]
-- **Alternatives Considered**: [what else was evaluated]
-- **MVP Approach**: [mock vs real integration]
-
-## Authentication
-- **Decision**: [Session/JWT]
-- **Rationale**: [why chosen]
-- **Alternatives Considered**: [what else was evaluated]
-- **Security Considerations**: [HTTPS, CSRF, etc.]
-```
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| Frontend Framework | React 19 + TypeScript | Best-in-class form handling, enterprise component ecosystem |
+| Bank Sync | CSV Import for MVP | API costs prohibitive, validate core value first |
+| Authentication | Session-based with HTTP-only cookies | XSS protection, simplicity for single-user MVP |
+| Password Hashing | Argon2id (pwdlib) | OWASP 2026 standard |
+| Decimal Precision | Python decimal.Decimal | Standard library, financial precision |
+| Database Migrations | Alembic | Standard for SQLAlchemy |
+| API Documentation | FastAPI OpenAPI/Swagger | Auto-generated, interactive docs |
 
 ## Phase 1: Design Artifacts
 
+**Status**: ✅ Complete
+
 ### Data Model (data-model.md)
 
-Will document the following entities with full schema details:
+Documented entities with full schema details:
 
-1. **Account** (FR-001, FR-002, FR-003)
-2. **Transaction** (FR-005, FR-006, FR-007, FR-010)
-3. **CategoryGroup** (FR-011)
-4. **Category** (FR-012, FR-013, FR-014, FR-015)
-5. **CategoryTarget** (FR-026, FR-027, FR-028)
-6. **Assignment** (FR-037 - audit trail)
-7. **CategorizationRule** (FR-008, FR-009)
-8. **Reconciliation** (FR-021, FR-025)
-
-Each entity will include:
-- Field definitions with types (PostgreSQL types + Python types)
-- Constraints (NOT NULL, UNIQUE, CHECK constraints)
-- Indexes for query performance
-- Relationships (foreign keys)
-- Validation rules from spec
-- State transitions where applicable
+1. **User** - email, password_hash, timezone ✅
+2. **Account** (FR-001, FR-002, FR-003) - name, type, balance ✅
+3. **Transaction** (FR-005, FR-006, FR-007, FR-010) - date, payee, amount, state ✅
+4. **CategoryGroup** (FR-011) - name, display_order ✅
+5. **Category** (FR-012, FR-013, FR-014, FR-015) - name, group ✅
+6. **CategorizationRule** (FR-008, FR-009) - payee_pattern, category ✅
+7. **CategoryTarget** (FR-026, FR-027, FR-028) - Pending
+8. **Assignment** (FR-037 - audit trail) - Pending
+9. **Reconciliation** (FR-021, FR-025) - Pending
 
 ### API Contracts (contracts/)
 
-Will generate OpenAPI 3.0 schemas for:
-
-1. **accounts.yaml**: Account CRUD, balance queries
-2. **transactions.yaml**: Transaction inbox, approval, categorization, rules
-3. **categories.yaml**: Category/group CRUD, assignments
-4. **targets.yaml**: Target CRUD, underfunded calculations
-5. **budget.yaml**: Month view, funding actions (Fund Underfunded, Fund All)
-6. **reconciliation.yaml**: Reconciliation workflow
-
-Each contract will include:
-- Endpoint paths and HTTP methods
-- Request/response schemas
-- Validation rules
-- Error responses
-- Example payloads
+- **auth.yaml**: Authentication endpoints (NEW - to be added)
+- **targets.yaml**: Target CRUD, underfunded calculations ✅
+- **README.md**: Contract documentation ✅
 
 ### Quickstart Guide (quickstart.md)
 
-Will provide:
-- Prerequisites (Python 3.11, PostgreSQL, Docker optional)
-- Environment setup (virtualenv, dependencies)
-- Database setup (create DB, run migrations)
-- Running tests (pytest commands)
-- Running dev server (uvicorn)
-- Running frontend dev server
-- API documentation URL (FastAPI /docs)
-- Sample data loading (optional fixtures)
-
-### Agent Context Update
-
-After completing Phase 1 artifacts, will run:
-```bash
-.specify/scripts/bash/update-agent-context.sh claude
-```
-
-This will update the Claude-specific context file with:
-- Technology stack decisions (FastAPI, PostgreSQL, frontend framework)
-- Project structure overview
-- Key architectural patterns
-- Testing approach
-
-## Next Steps
-
-1. **Phase 0**: Execute research for the 3 NEEDS CLARIFICATION items
-2. **Phase 1**: Generate data-model.md, contracts/, quickstart.md
-3. **Phase 1**: Update agent context
-4. **Re-check Constitution**: Verify no violations introduced during design
-5. **Phase 2**: Ready for `/speckit.tasks` to generate implementation tasks
+✅ Complete - includes dev environment setup, testing commands, Docker configuration.
 
 ---
 
-**Status**: Phase 0 research pending. Will begin with frontend framework, bank sync, and authentication research.
+**Status**: Plan updated 2026-01-17. Ready for `/speckit.tasks` to generate tasks for User Story 0 (Authentication UI).

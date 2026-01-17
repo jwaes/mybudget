@@ -1,9 +1,0 @@
-node_modules/
-dist/
-build/
-coverage/
-*.min.js
-.vite/
-vite.config.ts.timestamp-*
-playwright-report/
-test-results/

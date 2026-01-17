@@ -24,7 +24,7 @@ from mybudget.main import app
 
 
 # Test database URL (use a separate test database)
-TEST_DATABASE_URL = "postgresql+asyncpg://mybudget:mybudget@localhost:5434/mybudget_test"
+TEST_DATABASE_URL = "postgresql+psycopg://mybudget:mybudget@localhost:5434/mybudget_test"
 
 
 @pytest.fixture(scope="session")

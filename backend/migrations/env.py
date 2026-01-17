@@ -14,7 +14,16 @@ from alembic import context
 
 # Import the declarative base and all models
 from mybudget.db.base import Base
-from mybudget.models import User  # noqa: F401 - imported to register with Base
+from mybudget.models import (  # noqa: F401 - imported to register with Base
+    User,
+    Account,
+    AccountType,
+    Category,
+    CategoryGroup,
+    Transaction,
+    TransactionState,
+    CategorizationRule,
+)
 
 # This is the Alembic Config object
 config = context.config
@@ -75,7 +84,7 @@ async def run_async_migrations() -> None:
 
     configuration = config.get_section(config.config_ini_section, {})
     # Use DATABASE_URL from environment if available
-    database_url = os.getenv("DATABASE_URL", "postgresql+asyncpg://mybudget:mybudget@localhost:5432/mybudget")
+    database_url = os.getenv("DATABASE_URL", "postgresql+psycopg://mybudget:mybudget@localhost:5434/mybudget")
     configuration["sqlalchemy.url"] = database_url
 
     connectable = async_engine_from_config(

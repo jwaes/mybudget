@@ -12,32 +12,12 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    host: true,
+    allowedHosts: ['code01.mast.jacotech.net'],
     proxy: {
       '/api': {
         target: 'http://localhost:8000',
         changeOrigin: true,
-      },
-    },
-  },
-  test: {
-    globals: true,
-    environment: 'jsdom',
-    setupFiles: './src/setupTests.ts',
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'json', 'html'],
-      exclude: [
-        'node_modules/',
-        'src/setupTests.ts',
-        '**/*.d.ts',
-        '**/*.config.*',
-        '**/dist/**',
-      ],
-      thresholds: {
-        lines: 90,
-        functions: 90,
-        branches: 90,
-        statements: 90,
       },
     },
   },

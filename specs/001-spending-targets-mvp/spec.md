@@ -7,6 +7,26 @@
 
 ## User Scenarios & Testing *(mandatory)*
 
+### User Story 0 - User Authentication (Priority: P0)
+
+Users must be able to create an account and log in before accessing any budget features.
+
+**Why this priority**: Authentication is the gateway to all other features - without logging in, users cannot access their accounts, transactions, or budget data.
+
+**Independent Test**: User can register a new account, log in with credentials, access protected budget pages, and log out.
+
+**Acceptance Scenarios**:
+
+1. **Given** an unauthenticated visitor, **When** they access any budget page, **Then** they are redirected to the login page
+2. **Given** the login page, **When** a new user clicks "Register", **Then** they see a registration form with email, password, and timezone fields
+3. **Given** the registration form, **When** the user submits valid credentials, **Then** their account is created and they are automatically logged in
+4. **Given** the login page, **When** a returning user enters valid email and password, **Then** they are authenticated and redirected to the dashboard
+5. **Given** the login page, **When** a user enters invalid credentials, **Then** they see an error message and remain on the login page
+6. **Given** an authenticated user, **When** they click "Log out", **Then** their session ends and they are redirected to the login page
+7. **Given** an authenticated session, **When** the session expires (30 minutes of inactivity), **Then** the user is redirected to login on their next action
+
+---
+
 ### User Story 1 - Set Up Bank Account and Sync Transactions (Priority: P1)
 
 Users need to connect their bank accounts and import transactions before they can manage their budget.
@@ -125,6 +145,18 @@ Users need targets to behave consistently across month boundaries so they can tr
 
 ### Functional Requirements
 
+**User Authentication**
+
+- **FR-AUTH-001**: System MUST provide a login page with email and password fields
+- **FR-AUTH-002**: System MUST provide a registration page with email, password, and timezone fields
+- **FR-AUTH-003**: System MUST redirect unauthenticated users to the login page when accessing protected routes
+- **FR-AUTH-004**: System MUST display clear error messages for invalid login attempts
+- **FR-AUTH-005**: System MUST redirect users to the dashboard after successful login
+- **FR-AUTH-006**: System MUST provide a logout action that ends the user session
+- **FR-AUTH-007**: System MUST automatically expire sessions after 30 minutes of inactivity
+- **FR-AUTH-008**: System MUST validate email format and password strength during registration
+- **FR-AUTH-009**: System MUST prevent duplicate email registration with clear error message
+
 **Account Management**
 
 - **FR-001**: System MUST support checking and savings bank account types
@@ -209,6 +241,9 @@ Users need targets to behave consistently across month boundaries so they can tr
 
 ### Measurable Outcomes
 
+- **SC-AUTH-001**: New users can complete registration and reach the dashboard in under 30 seconds
+- **SC-AUTH-002**: Returning users can log in and reach the dashboard in under 10 seconds
+- **SC-AUTH-003**: 95% of login attempts with valid credentials succeed on first try
 - **SC-001**: Users can complete the full workflow from connecting a bank account to seeing imported transactions in under 2 minutes
 - **SC-002**: Users can create a category, set a spending target, and fund it to target in under 60 seconds
 - **SC-003**: Users can navigate from "new month" to "all targets fully funded" in under 60 seconds using "Fund All Underfunded"
