@@ -8,11 +8,13 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from '@/lib/auth-context'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { SidebarLayout } from '@/components/layout/SidebarLayout'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { LoginPage } from '@/pages/Login'
 import { RegisterPage } from '@/pages/Register'
 import { AccountsPage } from '@/pages/Accounts'
 import { TransactionsPage } from '@/pages/Transactions'
 import { BudgetPage } from '@/pages/Budget'
+import { NotFound } from '@/pages/NotFound'
 
 /**
  * Dashboard placeholder page.
@@ -53,69 +55,71 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
  */
 export default function App() {
   return (
-    <Routes>
-      {/* Public routes (redirect to dashboard if authenticated) */}
-      <Route
-        path="/login"
-        element={
-          <PublicRoute>
-            <LoginPage />
-          </PublicRoute>
-        }
-      />
-      <Route
-        path="/register"
-        element={
-          <PublicRoute>
-            <RegisterPage />
-          </PublicRoute>
-        }
-      />
+    <ErrorBoundary>
+      <Routes>
+        {/* Public routes (redirect to dashboard if authenticated) */}
+        <Route
+          path="/login"
+          element={
+            <PublicRoute>
+              <LoginPage />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            <PublicRoute>
+              <RegisterPage />
+            </PublicRoute>
+          }
+        />
 
-      {/* Protected routes (require authentication) */}
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <SidebarLayout>
-              <DashboardPage />
-            </SidebarLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/accounts"
-        element={
-          <ProtectedRoute>
-            <SidebarLayout>
-              <AccountsPage />
-            </SidebarLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/transactions"
-        element={
-          <ProtectedRoute>
-            <SidebarLayout>
-              <TransactionsPage />
-            </SidebarLayout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/budget"
-        element={
-          <ProtectedRoute>
-            <SidebarLayout>
-              <BudgetPage />
-            </SidebarLayout>
-          </ProtectedRoute>
-        }
-      />
+        {/* Protected routes (require authentication) */}
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <SidebarLayout>
+                <DashboardPage />
+              </SidebarLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/accounts"
+          element={
+            <ProtectedRoute>
+              <SidebarLayout>
+                <AccountsPage />
+              </SidebarLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/transactions"
+          element={
+            <ProtectedRoute>
+              <SidebarLayout>
+                <TransactionsPage />
+              </SidebarLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/budget"
+          element={
+            <ProtectedRoute>
+              <SidebarLayout>
+                <BudgetPage />
+              </SidebarLayout>
+            </ProtectedRoute>
+          }
+        />
 
-      {/* Catch-all redirect */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        {/* 404 Not Found */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </ErrorBoundary>
   )
 }

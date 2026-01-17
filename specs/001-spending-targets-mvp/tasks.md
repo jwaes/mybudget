@@ -245,7 +245,7 @@
 
 ---
 
-## Phase 5: User Story 3 - Reconcile Account Against Statement (Priority: P3)
+## Phase 5: User Story 3 - Reconcile Account Against Statement (Priority: P3) ✅ COMPLETE
 
 **Goal**: Users can reconcile accounts against bank statements with discrepancy resolution
 
@@ -266,14 +266,12 @@
 - [X] T116 [P] [US3] Create Pydantic schemas in backend/src/mybudget/schemas/reconciliation.py
 - [X] T117 [US3] Implement reconciliation service in backend/src/mybudget/services/reconciliation_service.py
 - [X] T118 [US3] Implement reconciliation API endpoints in backend/src/mybudget/api/reconciliation.py
-- [ ] T119 [P] [US3] Create ReconcileModal component in frontend/src/components/ReconcileModal.tsx → Use shadcn Dialog (do after 002)
-- [ ] T120 [US3] Create reconciliationService in frontend/src/services/reconciliationService.ts
-- [ ] T121 [US3] Integrate reconciliation into Accounts page
-- [ ] T122 [US3] Test: Write component tests for ReconcileModal in frontend/tests/components/ReconcileModal.test.tsx
+- [X] T119 [P] [US3] Create ReconcileModal component in frontend/src/components/ReconcileModal.tsx → Use shadcn Dialog ✅ Completed with 002-shadcn-ui-migration
+- [X] T120 [US3] Create reconciliationService in frontend/src/services/reconciliationService.ts ✅ Completed 2026-01-17
+- [X] T121 [US3] Integrate reconciliation into Accounts page ✅ Completed 2026-01-17
+- [X] T122 [US3] Test: Write component tests for ReconcileModal in frontend/tests/components/ReconcileModal.test.tsx ✅ Completed 2026-01-17
 
-**⚠️ NOTE**: Complete 002-shadcn-ui-migration first, then build ReconcileModal with shadcn Dialog component.
-
-**Checkpoint**: User Story 3 backend complete - reconciliation API functional, frontend UI pending
+**Checkpoint**: User Story 3 complete - full reconciliation workflow functional
 
 ---
 
@@ -312,7 +310,7 @@
 
 ---
 
-## Phase 7: User Story 5 - View Funding Guidance and Fund Underfunded Categories (Priority: P5) 🎯 Core Feature
+## Phase 7: User Story 5 - View Funding Guidance and Fund Underfunded Categories (Priority: P5) 🎯 Core Feature ✅ COMPLETE
 
 **Goal**: Users can see total underfunded, filter/sort categories, and use quick-fund buttons
 
@@ -337,13 +335,13 @@
 - [X] T153 [P] [US5] Create "Fund All Underfunded" button in BudgetMonthView top bar
 - [X] T154 [US5] Implement optimistic UI updates for funding actions (update local state before API response)
 - [X] T155 [US5] Add funding action feedback (toast/snackbar showing "Funded €X to Category")
-- [ ] T156 [US5] Test: Write E2E test for full funding workflow in frontend/tests/e2e/funding-workflow.spec.ts
+- [X] T156 [US5] Test: Write E2E test for full funding workflow in frontend/tests/e2e/funding-workflow.spec.ts ✅ Completed 2026-01-17
 
 **Checkpoint**: User Story 5 complete - full funding guidance and quick-fund workflow functional
 
 ---
 
-## Phase 8: User Story 6 - Month Rollover with Target Persistence (Priority: P6)
+## Phase 8: User Story 6 - Month Rollover with Target Persistence (Priority: P6) ✅ COMPLETE
 
 **Goal**: Targets behave consistently across month boundaries (Monthly Needed resets, Target Balance persists, Target by Date adjusts)
 
@@ -351,17 +349,17 @@
 
 ### Tests for User Story 6 (TDD - Write These FIRST)
 
-- [ ] T157 [P] [US6] Test: Write unit test for Monthly Needed month rollover (funded_this_month resets, underfunded = target) in backend/tests/unit/test_services/test_target_service.py
-- [ ] T158 [P] [US6] Test: Write unit test for Target Balance month rollover (target persists, adjusts to current available) in backend/tests/unit/test_services/test_target_service.py
-- [ ] T159 [P] [US6] Test: Write unit test for Target by Date month rollover (months_left decreases, suggested_monthly adjusts) in backend/tests/unit/test_services/test_target_service.py
-- [ ] T160 [US6] Test: Write integration test for month navigation with targets in backend/tests/integration/test_user_journeys/test_month_rollover.py
+- [X] T157 [P] [US6] Test: Write unit test for Monthly Needed month rollover (funded_this_month resets, underfunded = target) in backend/tests/unit/test_services/test_target_service.py ✅ Completed 2026-01-17
+- [X] T158 [P] [US6] Test: Write unit test for Target Balance month rollover (target persists, adjusts to current available) in backend/tests/unit/test_services/test_target_service.py ✅ Completed 2026-01-17
+- [X] T159 [P] [US6] Test: Write unit test for Target by Date month rollover (months_left decreases, suggested_monthly adjusts) in backend/tests/unit/test_services/test_target_service.py ✅ Completed 2026-01-17
+- [X] T160 [US6] Test: Write integration test for month navigation with targets in backend/tests/integration/test_user_journeys/test_month_rollover.py ✅ Completed 2026-01-17
 
 ### Implementation for User Story 6
 
-- [ ] T161 [US6] Update budget service to handle month navigation correctly (calculate rollover for each category)
-- [ ] T162 [US6] Update target service to recalculate underfunded based on new month context
-- [ ] T163 [US6] Add month boundary handling in frontend MonthNavigator component
-- [ ] T164 [US6] Test: Write E2E test for month navigation with all three target types in frontend/tests/e2e/month-rollover.spec.ts
+- [X] T161 [US6] Update budget service to handle month navigation correctly (calculate rollover for each category) ✅ Already implemented in budget_service.py
+- [X] T162 [US6] Update target service to recalculate underfunded based on new month context ✅ Already implemented in target_service.py
+- [X] T163 [US6] Add month boundary handling in frontend MonthNavigator component ✅ Already implemented
+- [X] T164 [US6] Test: Write E2E test for month navigation with all three target types in frontend/tests/e2e/month-rollover.spec.ts ✅ Completed 2026-01-17
 
 **Checkpoint**: User Story 6 complete - month rollover behavior is correct and predictable
 
@@ -375,17 +373,17 @@
 
 - [x] T165 [P] Create currency formatter utility in frontend/src/lib/formatters.ts (formatCurrency, formatDecimal) ✅ Created 2026-01-17
 - [x] T166 [P] Create date formatter utility in frontend/src/lib/formatters.ts (formatMonthYear, formatDate) ✅ Created 2026-01-17
-- [ ] T167 [P] Add loading states to all async operations (spinner/skeleton components) → Use shadcn Skeleton after 002
-- [ ] T168 [P] Add error boundaries in React app for graceful error handling
+- [X] T167 [P] Add loading states to all async operations (spinner/skeleton components) → Used shadcn Skeleton in 002-shadcn-ui-migration ✅
+- [X] T168 [P] Add error boundaries in React app for graceful error handling ✅ Created ErrorBoundary.tsx 2026-01-17
 - [x] T169 [P] Add error toast/snackbar system for user feedback ✅ Enhanced Toast.tsx 2026-01-17
 - [ ] T170 [P] Implement form validation on all input components (real-time feedback) → Use shadcn Form after 002
-- [ ] T171 Create 404 Not Found page in frontend/src/pages/NotFound.tsx
-- [ ] T172 [P] Add accessibility attributes (ARIA labels, keyboard navigation) → Handled by Radix UI in 002
+- [X] T171 Create 404 Not Found page in frontend/src/pages/NotFound.tsx ✅ Created 2026-01-17
+- [X] T172 [P] Add accessibility attributes (ARIA labels, keyboard navigation) → Handled by Radix UI in 002-shadcn-ui-migration ✅
 - [ ] T173 [P] Optimize bundle size (code splitting, lazy loading) → Do after 002 migration complete
 - [ ] T174 Create deployment documentation in docs/DEPLOYMENT.md
 - [ ] T175 [P] Add database backup/restore scripts in backend/scripts/
-- [ ] T176 [P] Setup GitHub Actions CI/CD pipeline (.github/workflows/ci.yml for backend tests)
-- [ ] T177 [P] Setup GitHub Actions CI/CD pipeline (.github/workflows/frontend.yml for frontend tests)
+- [X] T176 [P] Setup GitHub Actions CI/CD pipeline (.github/workflows/backend.yml for backend tests) ✅ Created 2026-01-17
+- [X] T177 [P] Setup GitHub Actions CI/CD pipeline (.github/workflows/frontend.yml for frontend tests) ✅ Created 2026-01-17
 - [ ] T178 Run full test suite and achieve 90%+ code coverage
 - [ ] T179 Performance testing: Verify API response times <200ms p95
 - [ ] T180 Run quickstart.md validation (ensure new developer can setup in 5 minutes)
