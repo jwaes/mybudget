@@ -191,7 +191,8 @@ describe('TransactionInbox', () => {
     })
 
     const approveButtons = screen.getAllByRole('button', { name: /approve/i })
-    expect(approveButtons[0]).toBeDisabled()
+    expect(approveButtons[0]).toBeDefined()
+    expect(approveButtons[0]!).toBeDisabled()
   })
 
   it('should enable approve button when category is selected', async () => {
@@ -211,7 +212,8 @@ describe('TransactionInbox', () => {
 
     // Click the first category select trigger to open dropdown
     const categorySelects = screen.getAllByRole('combobox')
-    await user.click(categorySelects[0])
+    expect(categorySelects[0]).toBeDefined()
+    await user.click(categorySelects[0]!)
 
     // Wait for dropdown to open and select an option
     await waitFor(() => {
@@ -220,15 +222,17 @@ describe('TransactionInbox', () => {
     await user.click(screen.getByRole('option', { name: 'Groceries' }))
 
     const approveButtons = screen.getAllByRole('button', { name: /approve/i })
-    expect(approveButtons[0]).not.toBeDisabled()
+    expect(approveButtons[0]).toBeDefined()
+    expect(approveButtons[0]!).not.toBeDisabled()
   })
 
   it('should approve transaction and remove from list', async () => {
     const user = userEvent.setup()
     const onTransactionApproved = vi.fn()
 
+    const baseTransaction = mockTransactions[0]!
     const approvedTransaction = {
-      ...mockTransactions[0],
+      ...baseTransaction,
       state: 'APPROVED' as const,
       category_id: 'cat-1',
       approved_at: '2026-01-17T12:00:00Z',
@@ -249,7 +253,8 @@ describe('TransactionInbox', () => {
 
     // Click the first category select trigger to open dropdown
     const categorySelects = screen.getAllByRole('combobox')
-    await user.click(categorySelects[0])
+    expect(categorySelects[0]).toBeDefined()
+    await user.click(categorySelects[0]!)
 
     // Wait for dropdown to open and select an option
     await waitFor(() => {
@@ -259,7 +264,8 @@ describe('TransactionInbox', () => {
 
     // Click approve
     const approveButtons = screen.getAllByRole('button', { name: /approve/i })
-    await user.click(approveButtons[0])
+    expect(approveButtons[0]).toBeDefined()
+    await user.click(approveButtons[0]!)
 
     // Transaction should be removed from the list
     await waitFor(() => {

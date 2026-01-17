@@ -59,10 +59,12 @@ const mockTransactions = [
     payee: 'Grocery Store',
     memo: null,
     amount: '-50.00',
-    state: 'APPROVED',
+    state: 'APPROVED' as const,
     category_id: null,
     created_at: '2026-01-10T00:00:00Z',
     updated_at: '2026-01-10T00:00:00Z',
+    approved_at: '2026-01-10T00:00:00Z',
+    cleared_at: null,
   },
   {
     id: 'tx-2',
@@ -72,10 +74,12 @@ const mockTransactions = [
     payee: 'Paycheck',
     memo: null,
     amount: '2000.00',
-    state: 'APPROVED',
+    state: 'APPROVED' as const,
     category_id: null,
     created_at: '2026-01-12T00:00:00Z',
     updated_at: '2026-01-12T00:00:00Z',
+    approved_at: '2026-01-12T00:00:00Z',
+    cleared_at: null,
   },
   {
     id: 'tx-3',
@@ -85,10 +89,12 @@ const mockTransactions = [
     payee: 'Electric Bill',
     memo: null,
     amount: '-100.00',
-    state: 'CLEARED',
+    state: 'CLEARED' as const,
     category_id: null,
     created_at: '2026-01-14T00:00:00Z',
     updated_at: '2026-01-14T00:00:00Z',
+    approved_at: '2026-01-14T00:00:00Z',
+    cleared_at: '2026-01-14T01:00:00Z',
   },
 ]
 
@@ -97,8 +103,7 @@ const mockCategoryGroups = [
     id: 'group-1',
     user_id: 'user-1',
     name: 'Bills',
-    sort_order: 1,
-    is_income: false,
+    display_order: 1,
     created_at: '2026-01-01T00:00:00Z',
     updated_at: '2026-01-01T00:00:00Z',
     categories: [
@@ -107,7 +112,6 @@ const mockCategoryGroups = [
         user_id: 'user-1',
         group_id: 'group-1',
         name: 'Miscellaneous',
-        sort_order: 1,
         created_at: '2026-01-01T00:00:00Z',
         updated_at: '2026-01-01T00:00:00Z',
       },
@@ -396,21 +400,12 @@ describe('ReconcileModal', () => {
       })
       vi.mocked(categoryService.list).mockResolvedValueOnce({ groups: mockCategoryGroups, total_groups: 1, total_categories: 1 })
       vi.mocked(reconciliationService.createAdjustment).mockResolvedValueOnce({
-        transaction: {
+        adjustment_transaction: {
           id: 'adj-tx-1',
-          user_id: 'user-1',
-          account_id: 'account-123',
-          date: '2026-01-15',
+          amount: '100.00',
           payee: 'Reconciliation Adjustment',
           memo: null,
-          amount: '100.00',
-          state: 'CLEARED',
-          category_id: 'cat-1',
-          created_at: '2026-01-15T10:00:00Z',
-          updated_at: '2026-01-15T10:00:00Z',
         },
-        cleared_balance: '1500.00',
-        discrepancy: '0.00',
       })
       vi.mocked(reconciliationService.get).mockResolvedValueOnce({
         ...mockReconciliation,

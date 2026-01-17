@@ -8,7 +8,7 @@ import { ApiError } from '@/services/api'
 
 // Mock the global fetch function
 const mockFetch = vi.fn()
-global.fetch = mockFetch
+globalThis.fetch = mockFetch as typeof fetch
 
 describe('authService', () => {
   beforeEach(() => {
