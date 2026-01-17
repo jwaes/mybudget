@@ -71,7 +71,7 @@ describe('RegisterPage', () => {
     expect(screen.getByLabelText(/^password$/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/confirm password/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/timezone/i)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /register|sign up|create account/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /create account/i })).toBeInTheDocument()
   })
 
   it('should render a link to the login page', async () => {
@@ -94,7 +94,7 @@ describe('RegisterPage', () => {
       { timeout: 3000 }
     )
 
-    const submitButton = screen.getByRole('button', { name: /register|sign up|create account/i })
+    const submitButton = screen.getByRole('button', { name: /create account/i })
     await user.click(submitButton)
 
     // Wait for validation error
@@ -121,7 +121,7 @@ describe('RegisterPage', () => {
     const emailInput = screen.getByLabelText(/email/i)
     await user.type(emailInput, 'invalid-email')
 
-    const submitButton = screen.getByRole('button', { name: /register|sign up|create account/i })
+    const submitButton = screen.getByRole('button', { name: /create account/i })
     await user.click(submitButton)
 
     // Wait for validation error
@@ -151,7 +151,7 @@ describe('RegisterPage', () => {
     await user.type(emailInput, 'test@example.com')
     await user.type(passwordInput, 'short')
 
-    const submitButton = screen.getByRole('button', { name: /register|sign up|create account/i })
+    const submitButton = screen.getByRole('button', { name: /create account/i })
     await user.click(submitButton)
 
     // Wait for validation error
@@ -183,7 +183,7 @@ describe('RegisterPage', () => {
     await user.type(passwordInput, 'password123')
     await user.type(confirmPasswordInput, 'differentpassword')
 
-    const submitButton = screen.getByRole('button', { name: /register|sign up|create account/i })
+    const submitButton = screen.getByRole('button', { name: /create account/i })
     await user.click(submitButton)
 
     // Wait for validation error
@@ -215,7 +215,7 @@ describe('RegisterPage', () => {
     await user.type(passwordInput, 'password123')
     await user.type(confirmPasswordInput, 'password123')
 
-    const submitButton = screen.getByRole('button', { name: /register|sign up|create account/i })
+    const submitButton = screen.getByRole('button', { name: /create account/i })
     await user.click(submitButton)
 
     // Wait for validation error
@@ -278,7 +278,7 @@ describe('RegisterPage', () => {
     })
     await user.click(screen.getByRole('option', { name: /Europe\/Brussels/ }))
 
-    const submitButton = screen.getByRole('button', { name: /register|sign up|create account/i })
+    const submitButton = screen.getByRole('button', { name: /create account/i })
     await user.click(submitButton)
 
     await waitFor(() => {
@@ -319,7 +319,7 @@ describe('RegisterPage', () => {
     })
     await user.click(screen.getByRole('option', { name: /Europe\/Brussels/ }))
 
-    const submitButton = screen.getByRole('button', { name: /register|sign up|create account/i })
+    const submitButton = screen.getByRole('button', { name: /create account/i })
     await user.click(submitButton)
 
     await waitFor(() => {
@@ -358,14 +358,17 @@ describe('RegisterPage', () => {
     })
     await user.click(screen.getByRole('option', { name: /Europe\/Brussels/ }))
 
-    const submitButton = screen.getByRole('button', { name: /register|sign up|create account/i })
+    const submitButton = screen.getByRole('button', { name: /create account/i })
     await user.click(submitButton)
 
-    // Button should be disabled or show loading state
-    await waitFor(() => {
-      const button = screen.getByRole('button', { name: /register|sign|creating|loading/i })
-      expect(button).toBeDisabled()
-    })
+    // Button should show loading text and be disabled
+    await waitFor(
+      () => {
+        const button = screen.getByRole('button', { name: /creating account/i })
+        expect(button).toBeDisabled()
+      },
+      { timeout: 3000 }
+    )
 
     // Cleanup
     resolveRegister!(mockUser)
@@ -402,7 +405,7 @@ describe('RegisterPage', () => {
     })
     await user.click(screen.getByRole('option', { name: /Europe\/Brussels/ }))
 
-    const submitButton = screen.getByRole('button', { name: /register|sign up|create account/i })
+    const submitButton = screen.getByRole('button', { name: /create account/i })
     await user.click(submitButton)
 
     // First wait for the loading state to be visible (button text changes)
