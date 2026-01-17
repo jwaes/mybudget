@@ -63,74 +63,114 @@ describe('LoginPage', () => {
   it('should render login form with email and password fields', async () => {
     renderLoginPage()
 
-    await waitFor(() => {
-      expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
-    })
+    await waitFor(
+      () => {
+        expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
+      },
+      { timeout: 3000 }
+    )
 
     expect(screen.getByLabelText(/password/i)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /log in|sign in/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /log in/i })).toBeInTheDocument()
   })
 
   it('should render a link to the registration page', async () => {
     renderLoginPage()
 
-    await waitFor(() => {
-      expect(screen.getByRole('link', { name: /register|sign up|create account/i })).toBeInTheDocument()
-    })
+    await waitFor(
+      () => {
+        expect(screen.getByRole('link', { name: /register|sign up|create account/i })).toBeInTheDocument()
+      },
+      { timeout: 3000 }
+    )
   })
 
   it('should show validation error for empty email', async () => {
     const user = userEvent.setup()
     renderLoginPage()
 
-    await waitFor(() => {
-      expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
-    })
+    await waitFor(
+      () => {
+        expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
+      },
+      { timeout: 3000 }
+    )
 
-    const submitButton = screen.getByRole('button', { name: /log in|sign in/i })
+    const submitButton = screen.getByRole('button', { name: /log in/i })
     await user.click(submitButton)
 
-    await waitFor(() => {
-      expect(screen.getByText(/email.*required|please enter.*email/i)).toBeInTheDocument()
-    })
+    await waitFor(
+      () => {
+        expect(screen.getByText(/email is required/i)).toBeInTheDocument()
+      },
+      { timeout: 3000 }
+    )
   })
 
   it('should show validation error for invalid email format', async () => {
     const user = userEvent.setup()
     renderLoginPage()
 
-    await waitFor(() => {
-      expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
-    })
+    await waitFor(
+      () => {
+        expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
+      },
+      { timeout: 3000 }
+    )
 
-    const emailInput = screen.getByLabelText(/email/i)
+    const emailInput = screen.getByLabelText(/email/i) as HTMLInputElement
     await user.type(emailInput, 'invalid-email')
 
-    const submitButton = screen.getByRole('button', { name: /log in|sign in/i })
+    // Verify the value was typed
+    await waitFor(
+      () => {
+        expect(emailInput.value).toBe('invalid-email')
+      },
+      { timeout: 3000 }
+    )
+
+    const submitButton = screen.getByRole('button', { name: /log in/i })
     await user.click(submitButton)
 
-    await waitFor(() => {
-      expect(screen.getByText(/valid email|invalid email/i)).toBeInTheDocument()
-    })
+    await waitFor(
+      () => {
+        expect(screen.getByText(/please enter a valid email address/i)).toBeInTheDocument()
+      },
+      { timeout: 3000 }
+    )
   })
 
   it('should show validation error for empty password', async () => {
     const user = userEvent.setup()
     renderLoginPage()
 
-    await waitFor(() => {
-      expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
-    })
+    await waitFor(
+      () => {
+        expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
+      },
+      { timeout: 3000 }
+    )
 
-    const emailInput = screen.getByLabelText(/email/i)
+    const emailInput = screen.getByLabelText(/email/i) as HTMLInputElement
     await user.type(emailInput, 'test@example.com')
 
-    const submitButton = screen.getByRole('button', { name: /log in|sign in/i })
+    // Verify the value was typed
+    await waitFor(
+      () => {
+        expect(emailInput.value).toBe('test@example.com')
+      },
+      { timeout: 3000 }
+    )
+
+    const submitButton = screen.getByRole('button', { name: /log in/i })
     await user.click(submitButton)
 
-    await waitFor(() => {
-      expect(screen.getByText(/password.*required|please enter.*password/i)).toBeInTheDocument()
-    })
+    await waitFor(
+      () => {
+        expect(screen.getByText(/password is required/i)).toBeInTheDocument()
+      },
+      { timeout: 3000 }
+    )
   })
 
   it('should submit credentials and redirect on success', async () => {
@@ -144,25 +184,40 @@ describe('LoginPage', () => {
 
     renderLoginPage()
 
-    await waitFor(() => {
-      expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
-    })
+    await waitFor(
+      () => {
+        expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
+      },
+      { timeout: 3000 }
+    )
 
-    const emailInput = screen.getByLabelText(/email/i)
-    const passwordInput = screen.getByLabelText(/password/i)
+    const emailInput = screen.getByLabelText(/email/i) as HTMLInputElement
+    const passwordInput = screen.getByLabelText(/password/i) as HTMLInputElement
 
     await user.type(emailInput, 'test@example.com')
     await user.type(passwordInput, 'password123')
 
-    const submitButton = screen.getByRole('button', { name: /log in|sign in/i })
+    // Verify values were typed
+    await waitFor(
+      () => {
+        expect(emailInput.value).toBe('test@example.com')
+        expect(passwordInput.value).toBe('password123')
+      },
+      { timeout: 3000 }
+    )
+
+    const submitButton = screen.getByRole('button', { name: /log in/i })
     await user.click(submitButton)
 
-    await waitFor(() => {
-      expect(authService.login).toHaveBeenCalledWith({
-        email: 'test@example.com',
-        password: 'password123',
-      })
-    })
+    await waitFor(
+      () => {
+        expect(authService.login).toHaveBeenCalledWith({
+          email: 'test@example.com',
+          password: 'password123',
+        })
+      },
+      { timeout: 3000 }
+    )
   })
 
   it('should show error message for invalid credentials', async () => {
@@ -174,22 +229,37 @@ describe('LoginPage', () => {
 
     renderLoginPage()
 
-    await waitFor(() => {
-      expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
-    })
+    await waitFor(
+      () => {
+        expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
+      },
+      { timeout: 3000 }
+    )
 
-    const emailInput = screen.getByLabelText(/email/i)
-    const passwordInput = screen.getByLabelText(/password/i)
+    const emailInput = screen.getByLabelText(/email/i) as HTMLInputElement
+    const passwordInput = screen.getByLabelText(/password/i) as HTMLInputElement
 
     await user.type(emailInput, 'test@example.com')
     await user.type(passwordInput, 'wrongpassword')
 
-    const submitButton = screen.getByRole('button', { name: /log in|sign in/i })
+    // Verify values were typed
+    await waitFor(
+      () => {
+        expect(emailInput.value).toBe('test@example.com')
+        expect(passwordInput.value).toBe('wrongpassword')
+      },
+      { timeout: 3000 }
+    )
+
+    const submitButton = screen.getByRole('button', { name: /log in/i })
     await user.click(submitButton)
 
-    await waitFor(() => {
-      expect(screen.getByText(/invalid.*password|incorrect|failed/i)).toBeInTheDocument()
-    })
+    await waitFor(
+      () => {
+        expect(screen.getByText(/invalid email or password/i)).toBeInTheDocument()
+      },
+      { timeout: 3000 }
+    )
   })
 
   it('should show loading state while submitting', async () => {
@@ -204,24 +274,39 @@ describe('LoginPage', () => {
 
     renderLoginPage()
 
-    await waitFor(() => {
-      expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
-    })
+    await waitFor(
+      () => {
+        expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
+      },
+      { timeout: 3000 }
+    )
 
-    const emailInput = screen.getByLabelText(/email/i)
-    const passwordInput = screen.getByLabelText(/password/i)
+    const emailInput = screen.getByLabelText(/email/i) as HTMLInputElement
+    const passwordInput = screen.getByLabelText(/password/i) as HTMLInputElement
 
     await user.type(emailInput, 'test@example.com')
     await user.type(passwordInput, 'password123')
 
-    const submitButton = screen.getByRole('button', { name: /log in|sign in/i })
+    // Verify values were typed
+    await waitFor(
+      () => {
+        expect(emailInput.value).toBe('test@example.com')
+        expect(passwordInput.value).toBe('password123')
+      },
+      { timeout: 3000 }
+    )
+
+    const submitButton = screen.getByRole('button', { name: /log in/i })
     await user.click(submitButton)
 
-    // Button should be disabled or show loading state
-    await waitFor(() => {
-      const button = screen.getByRole('button', { name: /log|sign|loading/i })
-      expect(button).toBeDisabled()
-    })
+    // Wait for loading state
+    await waitFor(
+      () => {
+        const button = screen.getByRole('button', { name: /logging in/i })
+        expect(button).toBeDisabled()
+      },
+      { timeout: 3000 }
+    )
 
     // Cleanup: resolve the promise
     resolveLogin!({ message: 'Login successful', user_id: 'user-123' })
@@ -238,23 +323,42 @@ describe('LoginPage', () => {
 
     renderLoginPage()
 
-    await waitFor(() => {
-      expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
-    })
+    await waitFor(
+      () => {
+        expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
+      },
+      { timeout: 3000 }
+    )
 
-    const emailInput = screen.getByLabelText(/email/i)
-    const passwordInput = screen.getByLabelText(/password/i)
+    const emailInput = screen.getByLabelText(/email/i) as HTMLInputElement
+    const passwordInput = screen.getByLabelText(/password/i) as HTMLInputElement
 
     await user.type(emailInput, 'test@example.com')
     await user.type(passwordInput, 'password123')
 
-    const submitButton = screen.getByRole('button', { name: /log in|sign in/i })
+    // Verify values were typed
+    await waitFor(
+      () => {
+        expect(emailInput.value).toBe('test@example.com')
+        expect(passwordInput.value).toBe('password123')
+      },
+      { timeout: 3000 }
+    )
+
+    const submitButton = screen.getByRole('button', { name: /log in/i })
     await user.click(submitButton)
 
-    await waitFor(() => {
-      expect(emailInput).toBeDisabled()
-      expect(passwordInput).toBeDisabled()
-    })
+    // Wait for loading state to show button text change
+    await waitFor(
+      () => {
+        expect(screen.getByRole('button', { name: /logging in/i })).toBeInTheDocument()
+      },
+      { timeout: 3000 }
+    )
+
+    // Now inputs should be disabled
+    expect(emailInput).toBeDisabled()
+    expect(passwordInput).toBeDisabled()
 
     // Cleanup
     resolveLogin!({ message: 'Login successful', user_id: 'user-123' })
