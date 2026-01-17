@@ -317,9 +317,15 @@ describe('RegisterPage', () => {
 
     renderRegisterPage()
 
-    await waitFor(() => {
-      expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
-    })
+    // Wait for form to be fully rendered and enabled (after initial auth check)
+    await waitFor(
+      () => {
+        const emailInput = screen.getByLabelText(/email/i)
+        expect(emailInput).toBeInTheDocument()
+        expect(emailInput).not.toBeDisabled()
+      },
+      { timeout: 3000 }
+    )
 
     const emailInput = screen.getByLabelText(/email/i)
     const passwordInput = screen.getByLabelText(/^password$/i)
@@ -332,17 +338,31 @@ describe('RegisterPage', () => {
 
     // Select timezone using shadcn Select
     await user.click(timezoneSelect)
-    await waitFor(() => {
-      expect(screen.getByRole('option', { name: /Europe\/Brussels/ })).toBeInTheDocument()
-    })
+    await waitFor(
+      () => {
+        expect(screen.getByRole('option', { name: /Europe\/Brussels/ })).toBeInTheDocument()
+      },
+      { timeout: 3000 }
+    )
     await user.click(screen.getByRole('option', { name: /Europe\/Brussels/ }))
+
+    // Wait for select to close and show selected value
+    await waitFor(
+      () => {
+        expect(timezoneSelect).toHaveTextContent(/Europe\/Brussels/)
+      },
+      { timeout: 3000 }
+    )
 
     const submitButton = screen.getByRole('button', { name: /create account/i })
     await user.click(submitButton)
 
-    await waitFor(() => {
-      expect(screen.getByText(/already registered|email.*exists|already in use/i)).toBeInTheDocument()
-    })
+    await waitFor(
+      () => {
+        expect(screen.getByText(/Email already registered/i)).toBeInTheDocument()
+      },
+      { timeout: 3000 }
+    )
   })
 
   it('should show loading state while submitting', async () => {
@@ -356,9 +376,15 @@ describe('RegisterPage', () => {
 
     renderRegisterPage()
 
-    await waitFor(() => {
-      expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
-    })
+    // Wait for form to be fully rendered and enabled (after initial auth check)
+    await waitFor(
+      () => {
+        const emailInput = screen.getByLabelText(/email/i)
+        expect(emailInput).toBeInTheDocument()
+        expect(emailInput).not.toBeDisabled()
+      },
+      { timeout: 3000 }
+    )
 
     const emailInput = screen.getByLabelText(/email/i)
     const passwordInput = screen.getByLabelText(/^password$/i)
@@ -371,10 +397,21 @@ describe('RegisterPage', () => {
 
     // Select timezone using shadcn Select
     await user.click(timezoneSelect)
-    await waitFor(() => {
-      expect(screen.getByRole('option', { name: /Europe\/Brussels/ })).toBeInTheDocument()
-    })
+    await waitFor(
+      () => {
+        expect(screen.getByRole('option', { name: /Europe\/Brussels/ })).toBeInTheDocument()
+      },
+      { timeout: 3000 }
+    )
     await user.click(screen.getByRole('option', { name: /Europe\/Brussels/ }))
+
+    // Wait for select to close and show selected value
+    await waitFor(
+      () => {
+        expect(timezoneSelect).toHaveTextContent(/Europe\/Brussels/)
+      },
+      { timeout: 3000 }
+    )
 
     const submitButton = screen.getByRole('button', { name: /create account/i })
     await user.click(submitButton)
@@ -382,7 +419,7 @@ describe('RegisterPage', () => {
     // Button should show loading text and be disabled
     await waitFor(
       () => {
-        const button = screen.getByRole('button', { name: /creating account/i })
+        const button = screen.getByRole('button', { name: /Creating Account/i })
         expect(button).toBeDisabled()
       },
       { timeout: 3000 }
@@ -403,9 +440,15 @@ describe('RegisterPage', () => {
 
     renderRegisterPage()
 
-    await waitFor(() => {
-      expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
-    })
+    // Wait for form to be fully rendered and enabled (after initial auth check)
+    await waitFor(
+      () => {
+        const emailInput = screen.getByLabelText(/email/i)
+        expect(emailInput).toBeInTheDocument()
+        expect(emailInput).not.toBeDisabled()
+      },
+      { timeout: 3000 }
+    )
 
     const emailInput = screen.getByLabelText(/email/i)
     const passwordInput = screen.getByLabelText(/^password$/i)
@@ -418,18 +461,32 @@ describe('RegisterPage', () => {
 
     // Select timezone using shadcn Select
     await user.click(timezoneSelect)
-    await waitFor(() => {
-      expect(screen.getByRole('option', { name: /Europe\/Brussels/ })).toBeInTheDocument()
-    })
+    await waitFor(
+      () => {
+        expect(screen.getByRole('option', { name: /Europe\/Brussels/ })).toBeInTheDocument()
+      },
+      { timeout: 3000 }
+    )
     await user.click(screen.getByRole('option', { name: /Europe\/Brussels/ }))
+
+    // Wait for select to close and show selected value
+    await waitFor(
+      () => {
+        expect(timezoneSelect).toHaveTextContent(/Europe\/Brussels/)
+      },
+      { timeout: 3000 }
+    )
 
     const submitButton = screen.getByRole('button', { name: /create account/i })
     await user.click(submitButton)
 
     // First wait for the loading state to be visible (button text changes)
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: /creating account/i })).toBeInTheDocument()
-    })
+    await waitFor(
+      () => {
+        expect(screen.getByRole('button', { name: /Creating Account/i })).toBeInTheDocument()
+      },
+      { timeout: 3000 }
+    )
 
     // Now check that inputs are disabled
     expect(emailInput).toBeDisabled()
