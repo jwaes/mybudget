@@ -56,8 +56,8 @@ test.describe('Authentication', () => {
       await page.getByLabel(/password/i).fill(testPassword)
       await page.getByRole('button', { name: /log in|sign in/i }).click()
 
-      // Should redirect to dashboard or home
-      await expect(page).toHaveURL(/^\/$|\/dashboard/)
+      // Should redirect to dashboard or home (ends with / or contains /dashboard)
+      await expect(page).toHaveURL(/\/$|\/dashboard/)
     })
 
     test('should have link to registration page', async ({ page }) => {
@@ -88,7 +88,10 @@ test.describe('Authentication', () => {
       await page.getByLabel(/email/i).fill('test@example.com')
       await page.getByLabel(/^password$/i).fill('password123')
       await page.getByLabel(/confirm password/i).fill('differentpassword')
-      await page.getByLabel(/timezone/i).selectOption('Europe/Brussels')
+
+      // Select timezone using shadcn Select (click to open, then click option)
+      await page.getByRole('combobox', { name: /timezone/i }).click()
+      await page.getByRole('option', { name: /Europe\/Brussels/ }).click()
 
       await page.getByRole('button', { name: /register|sign up|create account/i }).click()
 
@@ -115,12 +118,15 @@ test.describe('Authentication', () => {
       await page.getByLabel(/email/i).fill(testEmail)
       await page.getByLabel(/^password$/i).fill('password123')
       await page.getByLabel(/confirm password/i).fill('password123')
-      await page.getByLabel(/timezone/i).selectOption('Europe/Brussels')
+
+      // Select timezone using shadcn Select (click to open, then click option)
+      await page.getByRole('combobox', { name: /timezone/i }).click()
+      await page.getByRole('option', { name: /Europe\/Brussels/ }).click()
 
       await page.getByRole('button', { name: /register|sign up|create account/i }).click()
 
       // Should be automatically logged in and redirected to dashboard
-      await expect(page).toHaveURL(/^\/$|\/dashboard/)
+      await expect(page).toHaveURL(/\/$|\/dashboard/)
     })
 
     test('should show error for duplicate email registration', async ({ page }) => {
@@ -141,7 +147,10 @@ test.describe('Authentication', () => {
       await page.getByLabel(/email/i).fill(testEmail)
       await page.getByLabel(/^password$/i).fill('password123')
       await page.getByLabel(/confirm password/i).fill('password123')
-      await page.getByLabel(/timezone/i).selectOption('Europe/Brussels')
+
+      // Select timezone using shadcn Select (click to open, then click option)
+      await page.getByRole('combobox', { name: /timezone/i }).click()
+      await page.getByRole('option', { name: /Europe\/Brussels/ }).click()
 
       await page.getByRole('button', { name: /register|sign up|create account/i }).click()
 
@@ -179,7 +188,7 @@ test.describe('Authentication', () => {
       await page.getByRole('button', { name: /log in|sign in/i }).click()
 
       // Wait for redirect to dashboard
-      await expect(page).toHaveURL(/^\/$|\/dashboard/)
+      await expect(page).toHaveURL(/\/$|\/dashboard/)
 
       // Find and click logout button
       await page.getByRole('button', { name: /log out|sign out/i }).click()
@@ -210,7 +219,7 @@ test.describe('Authentication', () => {
       await page.getByRole('button', { name: /log in|sign in/i }).click()
 
       // Wait for authentication to complete
-      await expect(page).toHaveURL(/^\/$|\/dashboard/)
+      await expect(page).toHaveURL(/\/$|\/dashboard/)
 
       // Now should be able to access protected routes
       await page.goto('/accounts')

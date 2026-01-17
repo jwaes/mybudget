@@ -28,7 +28,7 @@ async function registerAndLogin(page: Page, suffix: string): Promise<{ email: st
   await page.getByRole('button', { name: /log in|sign in/i }).click()
 
   // Wait for redirect to dashboard
-  await expect(page).toHaveURL(/^\/$|\/dashboard/)
+  await expect(page).toHaveURL(/\/$|\/dashboard/)
 
   return { email, password }
 }

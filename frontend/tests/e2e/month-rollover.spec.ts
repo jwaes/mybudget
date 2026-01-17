@@ -27,7 +27,7 @@ async function registerAndLogin(page: Page, suffix: string): Promise<string> {
   await page.getByLabel(/password/i).fill(password)
   await page.getByRole('button', { name: /log in|sign in/i }).click()
 
-  await expect(page).toHaveURL(/^\/$|\/dashboard/)
+  await expect(page).toHaveURL(/\/$|\/dashboard/)
 
   return email
 }
