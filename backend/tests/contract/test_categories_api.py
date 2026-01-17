@@ -9,11 +9,11 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from mybudget.models.user import User
-from mybudget.models.category import Category, CategoryGroup
-from mybudget.models.assignment import Assignment
 from mybudget.lib.auth import hash_password
-from mybudget.lib.session import create_session_token, SESSION_COOKIE_NAME
+from mybudget.lib.session import SESSION_COOKIE_NAME, create_session_token
+from mybudget.models.assignment import Assignment
+from mybudget.models.category import Category, CategoryGroup
+from mybudget.models.user import User
 
 
 @pytest.mark.contract

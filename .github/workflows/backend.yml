@@ -2,12 +2,12 @@ name: Backend CI
 
 on:
   push:
-    branches: [main, 001-spending-targets-mvp]
+    branches: [main, 001-spending-targets-mvp, 002-shadcn-ui-migration]
     paths:
       - 'backend/**'
       - '.github/workflows/backend.yml'
   pull_request:
-    branches: [main, 001-spending-targets-mvp]
+    branches: [main, 001-spending-targets-mvp, 002-shadcn-ui-migration]
     paths:
       - 'backend/**'
       - '.github/workflows/backend.yml'

@@ -6,8 +6,6 @@ Tests target creation, validation, and underfunded calculations.
 from datetime import date
 from decimal import Decimal
 
-import pytest
-
 from mybudget.models.target import CategoryTarget, TargetType
 
 

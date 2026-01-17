@@ -3,10 +3,11 @@ Unit tests for User model.
 
 Following TDD principles - test written before implementation.
 """
-from datetime import datetime, timezone
+from datetime import datetime
 
 import pytest
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from mybudget.models.user import User
@@ -107,7 +108,7 @@ class TestUserModel:
         await db_session.commit()
 
         db_session.add(user2)
-        with pytest.raises(Exception):  # Should raise IntegrityError
+        with pytest.raises(IntegrityError):
             await db_session.commit()
 
     @pytest.mark.asyncio

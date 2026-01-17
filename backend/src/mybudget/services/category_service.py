@@ -5,13 +5,12 @@ from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from mybudget.models.category import Category, CategoryGroup
 from mybudget.schemas.category import (
+    CategoryCreate,
     CategoryGroupCreate,
     CategoryGroupUpdate,
-    CategoryCreate,
     CategoryUpdate,
 )
 

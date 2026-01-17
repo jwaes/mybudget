@@ -9,14 +9,13 @@ from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import select, func
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from mybudget.lib.date_utils import get_month_first_day
+from mybudget.models.assignment import Assignment
 from mybudget.models.category import Category, CategoryGroup
 from mybudget.models.target import CategoryTarget
-from mybudget.models.assignment import Assignment
-from mybudget.models.account import Account
-from mybudget.lib.date_utils import get_month_first_day
 from mybudget.services.budget_service import BudgetService
 
 

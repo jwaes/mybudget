@@ -2,7 +2,7 @@
 Test database migrations to ensure they create the correct schema.
 """
 import pytest
-from sqlalchemy import inspect, text
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
@@ -89,11 +89,11 @@ async def test_users_table_constraints(db_session: AsyncSession) -> None:
     constraints = {row[0]: row[1] for row in result.fetchall()}
 
     # Primary key constraint
-    assert any("pk" in name for name in constraints.keys())
+    assert any("pk" in name for name in constraints)
 
     # Unique constraint on email - can be either a constraint or via unique index
     # SQLAlchemy implements unique=True via unique index, so check indexes too
-    email_constraint_exists = any("email" in name.lower() for name in constraints.keys())
+    email_constraint_exists = any("email" in name.lower() for name in constraints)
 
     if not email_constraint_exists:
         # Check for unique index instead
@@ -108,5 +108,5 @@ async def test_users_table_constraints(db_session: AsyncSession) -> None:
             )
         )
         indexes = {row[0]: row[1] for row in index_result.fetchall()}
-        email_index_exists = any("email" in name.lower() for name in indexes.keys())
+        email_index_exists = any("email" in name.lower() for name in indexes)
         assert email_index_exists, "Email should have either a unique constraint or unique index"

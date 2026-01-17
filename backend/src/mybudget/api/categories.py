@@ -5,7 +5,6 @@ Handles category group and category CRUD operations, and fund assignments.
 """
 import re
 from datetime import date
-from decimal import Decimal
 from typing import Annotated, Any
 from uuid import UUID
 
@@ -15,20 +14,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from mybudget.api.dependencies import CurrentUser
 from mybudget.db.session import get_db
 from mybudget.schemas.category import (
-    CategoryGroupCreate,
-    CategoryGroupUpdate,
-    CategoryGroupResponse,
-    CategoryCreate,
-    CategoryUpdate,
-    CategoryResponse,
-    CategoryListResponse,
-    CategoryGroupWithCategoriesResponse,
     AssignmentCreate,
     AssignmentResponse,
-    CategoryBudgetResponse,
+    CategoryCreate,
+    CategoryGroupCreate,
+    CategoryGroupResponse,
+    CategoryGroupUpdate,
+    CategoryGroupWithCategoriesResponse,
+    CategoryListResponse,
+    CategoryResponse,
+    CategoryUpdate,
 )
-from mybudget.services.category_service import CategoryService
 from mybudget.services.budget_service import BudgetService
+from mybudget.services.category_service import CategoryService
 
 router = APIRouter()
 
@@ -247,7 +245,7 @@ def parse_month_query(month_str: str) -> date:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Invalid month: {month_str}. {str(e)}",
-        )
+        ) from e
 
 
 @router.post("/{category_id}/assign", response_model=AssignmentResponse, status_code=status.HTTP_201_CREATED)

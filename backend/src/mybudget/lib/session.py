@@ -5,8 +5,6 @@ Provides cookie-based session management with signed tokens.
 """
 
 import uuid
-from datetime import datetime, timedelta, timezone
-from typing import Any
 
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 

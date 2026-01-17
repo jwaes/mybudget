@@ -7,16 +7,15 @@ from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
-from mybudget.models.target import CategoryTarget, TargetType
+from mybudget.lib.date_utils import get_month_first_day
 from mybudget.models.category import Category
+from mybudget.models.target import CategoryTarget, TargetType
 from mybudget.schemas.target import (
     CategoryTargetCreate,
     CategoryTargetUpdate,
 )
 from mybudget.services.budget_service import BudgetService
-from mybudget.lib.date_utils import get_month_first_day
 
 
 class TargetService:

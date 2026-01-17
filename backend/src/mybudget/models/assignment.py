@@ -4,21 +4,21 @@ Assignment model.
 Represents funds assigned to categories for a specific month.
 Per FR-037, assignments are append-only for audit trail.
 """
-from datetime import date, datetime, timezone as dt_timezone
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from uuid import UUID
 
 from sqlalchemy import Date, DateTime, ForeignKey, Index
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.types import DECIMAL
-from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from mybudget.db.base import Base
 
 
 def utc_now() -> datetime:
     """Get current UTC datetime."""
-    return datetime.now(dt_timezone.utc)
+    return datetime.now(UTC)
 
 
 class Assignment(Base):

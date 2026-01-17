@@ -43,7 +43,7 @@ def parse_month(month_str: str) -> date:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Invalid month: {month_str}. {str(e)}",
-        )
+        ) from e
 
 
 @router.get("/{month}")
@@ -135,17 +135,18 @@ async def fund_underfunded_category(
         Funding result with funded_amount, requested_amount, is_partial
     """
     from uuid import UUID
+
     from mybudget.services.funding_service import FundingService
 
     month_date = parse_month(month)
 
     try:
         cat_uuid = UUID(category_id)
-    except ValueError:
+    except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Invalid category_id: {category_id}",
-        )
+        ) from e
 
     funding_service = FundingService(db)
     result = await funding_service.fund_single_category(

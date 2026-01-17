@@ -1,11 +1,9 @@
 """
 Unit tests for Assignment model.
 """
-from datetime import date, datetime
+from datetime import date
 from decimal import Decimal
 from uuid import uuid4
-
-import pytest
 
 from mybudget.models.assignment import Assignment
 

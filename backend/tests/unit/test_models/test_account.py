@@ -3,7 +3,7 @@ Unit tests for Account model.
 
 Following TDD principles - test written before implementation.
 """
-from datetime import datetime, timezone
+from datetime import datetime
 from decimal import Decimal
 
 import pytest

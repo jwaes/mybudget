@@ -85,6 +85,9 @@ async def run_async_migrations() -> None:
     configuration = config.get_section(config.config_ini_section, {})
     # Use DATABASE_URL from environment if available
     database_url = os.getenv("DATABASE_URL", "postgresql+psycopg://mybudget:mybudget@localhost:5434/mybudget")
+    # Ensure async driver is specified (convert postgresql:// to postgresql+psycopg://)
+    if database_url.startswith("postgresql://"):
+        database_url = database_url.replace("postgresql://", "postgresql+psycopg://", 1)
     configuration["sqlalchemy.url"] = database_url
 
     connectable = async_engine_from_config(

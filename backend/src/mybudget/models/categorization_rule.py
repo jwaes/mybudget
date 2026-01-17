@@ -3,10 +3,10 @@ CategorizationRule model.
 
 Represents an auto-categorization rule for transactions.
 """
-from datetime import datetime, timezone as dt_timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
-from sqlalchemy import String, DateTime, ForeignKey
+from sqlalchemy import DateTime, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -15,7 +15,7 @@ from mybudget.db.base import Base
 
 def utc_now() -> datetime:
     """Get current UTC datetime."""
-    return datetime.now(dt_timezone.utc)
+    return datetime.now(UTC)
 
 
 class CategorizationRule(Base):

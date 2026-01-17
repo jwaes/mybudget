@@ -4,10 +4,10 @@ Unit tests for Category and CategoryGroup models.
 Following TDD principles - test written before implementation.
 """
 from datetime import datetime
-from decimal import Decimal
 
 import pytest
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from mybudget.models.user import User
@@ -110,7 +110,7 @@ class TestCategoryGroupModel:
         await db_session.commit()
 
         db_session.add(group2)
-        with pytest.raises(Exception):  # IntegrityError
+        with pytest.raises(IntegrityError):
             await db_session.commit()
 
     @pytest.mark.asyncio
@@ -238,7 +238,7 @@ class TestCategoryModel:
         await db_session.commit()
 
         db_session.add(cat2)
-        with pytest.raises(Exception):  # IntegrityError
+        with pytest.raises(IntegrityError):
             await db_session.commit()
 
     @pytest.mark.asyncio

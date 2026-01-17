@@ -3,19 +3,19 @@ Category and CategoryGroup models.
 
 Represents budget categories organized into groups.
 """
-from datetime import datetime, timezone as dt_timezone
+from datetime import UTC, datetime
 from uuid import UUID
 
-from sqlalchemy import String, DateTime, ForeignKey, Integer, UniqueConstraint
+from sqlalchemy import DateTime, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column
 
 from mybudget.db.base import Base
 
 
 def utc_now() -> datetime:
     """Get current UTC datetime."""
-    return datetime.now(dt_timezone.utc)
+    return datetime.now(UTC)
 
 
 class CategoryGroup(Base):

@@ -4,22 +4,23 @@ CategoryTarget model.
 Represents a spending target for a budget category.
 Supports three types: Monthly Needed, Target Balance, and Target by Date.
 """
-from datetime import date, datetime, timezone as dt_timezone
-from decimal import Decimal, ROUND_CEILING
+from datetime import UTC, date, datetime
+from decimal import ROUND_CEILING, Decimal
 from enum import Enum
 from uuid import UUID
 
-from sqlalchemy import String, DateTime, Date, ForeignKey, CheckConstraint
-from sqlalchemy.dialects.postgresql import UUID as PG_UUID, ENUM
-from sqlalchemy.types import DECIMAL
+from sqlalchemy import CheckConstraint, Date, DateTime, ForeignKey
+from sqlalchemy.dialects.postgresql import ENUM
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.types import DECIMAL
 
 from mybudget.db.base import Base
 
 
 def utc_now() -> datetime:
     """Get current UTC datetime."""
-    return datetime.now(dt_timezone.utc)
+    return datetime.now(UTC)
 
 
 class TargetType(str, Enum):

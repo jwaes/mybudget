@@ -3,9 +3,9 @@ User model.
 
 Represents a user account with authentication credentials.
 """
-from datetime import datetime, timezone as dt_timezone
+from datetime import UTC, datetime
 
-from sqlalchemy import String, DateTime
+from sqlalchemy import DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from mybudget.db.base import Base
@@ -13,7 +13,7 @@ from mybudget.db.base import Base
 
 def utc_now() -> datetime:
     """Get current UTC datetime."""
-    return datetime.now(dt_timezone.utc)
+    return datetime.now(UTC)
 
 
 class User(Base):

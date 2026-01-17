@@ -4,7 +4,6 @@ Unit tests for CategorizationRule model.
 Following TDD principles - test written before implementation.
 """
 from datetime import datetime
-from decimal import Decimal
 
 import pytest
 from sqlalchemy import select
@@ -32,7 +31,6 @@ class TestCategorizationRuleModel:
         self, db_session: AsyncSession
     ) -> None:
         """Test that created_at and updated_at are auto-generated on insert."""
-        from mybudget.models.account import Account, AccountType
         from mybudget.models.categorization_rule import CategorizationRule
         from mybudget.models.category import Category, CategoryGroup
 

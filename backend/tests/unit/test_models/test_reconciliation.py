@@ -4,10 +4,9 @@ Unit tests for Reconciliation model.
 Tests the reconciliation entity and its calculation methods.
 """
 
-import pytest
-from decimal import Decimal
-from datetime import date, datetime, timedelta, timezone
 import uuid
+from datetime import UTC, date, datetime, timedelta
+from decimal import Decimal
 
 from mybudget.models.reconciliation import Reconciliation, ReconciliationStatus
 
@@ -171,7 +170,7 @@ class TestReconciliationCompletion:
 
         # Mark as completed
         recon.status = ReconciliationStatus.COMPLETED
-        recon.completed_at = datetime.now(timezone.utc)
+        recon.completed_at = datetime.now(UTC)
 
         assert recon.status == ReconciliationStatus.COMPLETED
         assert recon.completed_at is not None

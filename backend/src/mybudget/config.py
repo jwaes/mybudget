@@ -3,7 +3,7 @@ Application configuration using Pydantic settings.
 
 Loads configuration from environment variables.
 """
-from pydantic import Field, PostgresDsn
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -17,11 +17,20 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # Database
-    DATABASE_URL: PostgresDsn = Field(
-        default="postgresql+asyncpg://mybudget:mybudget@localhost:5432/mybudget",
-        description="PostgreSQL database URL (must use asyncpg driver)",
+    # Database - use str type to allow flexibility with driver prefixes
+    DATABASE_URL: str = Field(
+        default="postgresql+psycopg://mybudget:mybudget@localhost:5432/mybudget",
+        description="PostgreSQL database URL",
     )
+
+    @field_validator("DATABASE_URL", mode="after")
+    @classmethod
+    def ensure_async_driver(cls, v: str) -> str:
+        """Ensure the database URL uses an async driver."""
+        # Convert postgresql:// to postgresql+psycopg:// for async support
+        if v.startswith("postgresql://"):
+            return v.replace("postgresql://", "postgresql+psycopg://", 1)
+        return v
 
     # Security
     SECRET_KEY: str = Field(

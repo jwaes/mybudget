@@ -1,28 +1,28 @@
 """
 Reconciliation service for business logic operations.
 """
-from datetime import datetime, timezone as dt_timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from mybudget.models.reconciliation import Reconciliation, ReconciliationStatus
-from mybudget.models.transaction import Transaction, TransactionState
 from mybudget.models.account import Account
 from mybudget.models.category import Category
+from mybudget.models.reconciliation import Reconciliation, ReconciliationStatus
+from mybudget.models.transaction import Transaction, TransactionState
 from mybudget.schemas.reconciliation import (
     ReconciliationCreate,
+    ReconciliationCreateAdjustment,
     ReconciliationMarkCleared,
     ReconciliationUnmarkCleared,
-    ReconciliationCreateAdjustment,
 )
 
 
 def utc_now() -> datetime:
     """Get current UTC datetime."""
-    return datetime.now(dt_timezone.utc)
+    return datetime.now(UTC)
 
 
 class ReconciliationService:

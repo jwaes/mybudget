@@ -12,11 +12,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from mybudget.api.dependencies import CurrentUser
 from mybudget.db.session import get_db
-from mybudget.lib.date_utils import get_month_first_day
 from mybudget.schemas.target import (
     CategoryTargetCreate,
-    CategoryTargetUpdate,
     CategoryTargetResponse,
+    CategoryTargetUpdate,
     UnderfundedResponse,
 )
 from mybudget.services.target_service import TargetService
@@ -40,11 +39,11 @@ async def create_target(
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Category already has a target",
-            )
+            ) from e
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
-        )
+        ) from e
 
     if not target:
         raise HTTPException(
@@ -118,7 +117,7 @@ async def update_target(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
-        )
+        ) from e
 
     if not target:
         raise HTTPException(

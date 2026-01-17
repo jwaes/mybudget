@@ -5,17 +5,17 @@ Provides budget month view calculations and fund assignment operations.
 """
 from datetime import date
 from decimal import Decimal
-from uuid import UUID
 from typing import Any
+from uuid import UUID
 
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from mybudget.models.category import Category, CategoryGroup
-from mybudget.models.assignment import Assignment
-from mybudget.models.transaction import Transaction, TransactionState
-from mybudget.models.account import Account
 from mybudget.lib.date_utils import get_month_first_day
+from mybudget.models.account import Account
+from mybudget.models.assignment import Assignment
+from mybudget.models.category import Category, CategoryGroup
+from mybudget.models.transaction import Transaction, TransactionState
 
 
 class BudgetService:
@@ -154,7 +154,7 @@ class BudgetService:
             "available": available,
         }
 
-    async def get_to_assign(self, user_id: UUID, month: date) -> Decimal:
+    async def get_to_assign(self, user_id: UUID, _month: date) -> Decimal:
         """
         Calculate "To Assign" amount for a user in a month.
 

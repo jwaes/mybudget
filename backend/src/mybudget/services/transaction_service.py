@@ -1,26 +1,26 @@
 """
 Transaction service for business logic operations.
 """
-from datetime import datetime, timezone as dt_timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from mybudget.models.transaction import Transaction, TransactionState
 from mybudget.models.account import Account
 from mybudget.models.category import Category
+from mybudget.models.transaction import Transaction, TransactionState
 from mybudget.schemas.transaction import (
+    TransactionApprove,
     TransactionCreate,
     TransactionUpdate,
-    TransactionApprove,
 )
 
 
 def utc_now() -> datetime:
     """Get current UTC datetime."""
-    return datetime.now(dt_timezone.utc)
+    return datetime.now(UTC)
 
 
 class TransactionService:

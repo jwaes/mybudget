@@ -6,11 +6,10 @@ Provides session factory and dependency for FastAPI endpoints.
 from collections.abc import AsyncGenerator
 from typing import Annotated
 
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from mybudget.config import settings
-
 
 # Create async engine
 engine = create_async_engine(

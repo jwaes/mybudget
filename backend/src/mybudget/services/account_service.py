@@ -7,7 +7,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from mybudget.models.account import Account, AccountType
+from mybudget.models.account import Account
 from mybudget.schemas.account import AccountCreate, AccountUpdate
 
 

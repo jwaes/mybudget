@@ -13,11 +13,11 @@ from mybudget.api.dependencies import CurrentUser
 from mybudget.db.session import get_db
 from mybudget.models.transaction import TransactionState
 from mybudget.schemas.transaction import (
-    TransactionCreate,
-    TransactionUpdate,
     TransactionApprove,
-    TransactionResponse,
+    TransactionCreate,
     TransactionListResponse,
+    TransactionResponse,
+    TransactionUpdate,
 )
 from mybudget.services.transaction_service import TransactionService
 
@@ -126,7 +126,7 @@ async def update_transaction(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
-        )
+        ) from e
 
     if not transaction:
         raise HTTPException(

@@ -7,8 +7,8 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from mybudget.models.user import User
 from mybudget.lib.auth import hash_password
+from mybudget.models.user import User
 
 
 @pytest.mark.contract

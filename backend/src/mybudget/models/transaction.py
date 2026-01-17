@@ -3,13 +3,14 @@ Transaction model.
 
 Represents a financial transaction on an account.
 """
-from datetime import datetime, timezone as dt_timezone, date
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from enum import Enum
 from uuid import UUID
 
-from sqlalchemy import String, DateTime, ForeignKey, Numeric, Text, Date
-from sqlalchemy.dialects.postgresql import UUID as PG_UUID, ENUM
+from sqlalchemy import Date, DateTime, ForeignKey, Numeric, String, Text
+from sqlalchemy.dialects.postgresql import ENUM
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from mybudget.db.base import Base
@@ -17,7 +18,7 @@ from mybudget.db.base import Base
 
 def utc_now() -> datetime:
     """Get current UTC datetime."""
-    return datetime.now(dt_timezone.utc)
+    return datetime.now(UTC)
 
 
 class TransactionState(str, Enum):

@@ -10,6 +10,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
 
+from mybudget.api import (
+    accounts,
+    auth,
+    budget,
+    categories,
+    reconciliation,
+    targets,
+    transactions,
+)
 from mybudget.config import settings
 
 # Create FastAPI app
@@ -34,7 +43,7 @@ app.add_middleware(
 # Exception handlers
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(
-    request: Request, exc: RequestValidationError
+    _request: Request, exc: RequestValidationError
 ) -> JSONResponse:
     """Handle validation errors with detailed error messages."""
     # Convert errors to JSON-serializable format
@@ -61,7 +70,7 @@ async def validation_exception_handler(
 
 @app.exception_handler(IntegrityError)
 async def integrity_exception_handler(
-    request: Request, exc: IntegrityError
+    _request: Request, _exc: IntegrityError
 ) -> JSONResponse:
     """Handle database integrity errors (e.g., unique constraint violations)."""
     return JSONResponse(
@@ -74,7 +83,7 @@ async def integrity_exception_handler(
 
 
 @app.exception_handler(Exception)
-async def general_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+async def general_exception_handler(_request: Request, exc: Exception) -> JSONResponse:
     """Handle unexpected exceptions."""
     if settings.DEBUG:
         # In debug mode, show detailed error
@@ -103,17 +112,6 @@ async def health_check() -> dict[str, str]:
     """Health check endpoint."""
     return {"status": "healthy"}
 
-
-# API routers
-from mybudget.api import (
-    accounts,
-    auth,
-    budget,
-    categories,
-    reconciliation,
-    targets,
-    transactions,
-)
 
 app.include_router(auth.router, prefix=settings.API_V1_PREFIX, tags=["Auth"])
 app.include_router(

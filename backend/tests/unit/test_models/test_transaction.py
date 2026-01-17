@@ -3,7 +3,7 @@ Unit tests for Transaction model.
 
 Following TDD principles - test written before implementation.
 """
-from datetime import datetime, timezone, date
+from datetime import date, datetime
 from decimal import Decimal
 
 import pytest
@@ -19,7 +19,7 @@ class TestTransactionModel:
 
     def test_transaction_creation(self) -> None:
         """Test creating a Transaction instance with required fields."""
-        from mybudget.models.transaction import Transaction, TransactionState
+        from mybudget.models.transaction import Transaction
 
         transaction = Transaction(
             date=date(2026, 1, 15),

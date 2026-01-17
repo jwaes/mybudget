@@ -10,8 +10,7 @@ from uuid import uuid4
 
 import pytest
 
-from mybudget.services.funding_service import FundingService, FundingResult
-from mybudget.models.target import TargetType
+from mybudget.services.funding_service import FundingResult, FundingService
 
 
 class TestFundingServiceInit:

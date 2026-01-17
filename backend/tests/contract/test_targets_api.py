@@ -12,9 +12,9 @@ from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from mybudget.lib.auth import hash_password
-from mybudget.lib.session import create_session_token, SESSION_COOKIE_NAME
+from mybudget.lib.session import SESSION_COOKIE_NAME, create_session_token
+from mybudget.models.category import Category, CategoryGroup
 from mybudget.models.user import User
-from mybudget.models.category import CategoryGroup, Category
 
 
 class TestTargetsAPICreate:
@@ -552,8 +552,8 @@ class TestTargetsAPIUnderfunded:
         self, client: AsyncClient, db_session: AsyncSession
     ) -> None:
         """Test underfunded calculation for Monthly Needed target."""
-        from mybudget.models.target import CategoryTarget, TargetType
         from mybudget.models.assignment import Assignment
+        from mybudget.models.target import CategoryTarget, TargetType
 
         user = User(
             email="underfunded_monthly@example.com",
@@ -610,8 +610,8 @@ class TestTargetsAPIUnderfunded:
         self, client: AsyncClient, db_session: AsyncSession
     ) -> None:
         """Test underfunded calculation for Target Balance target."""
-        from mybudget.models.target import CategoryTarget, TargetType
         from mybudget.models.assignment import Assignment
+        from mybudget.models.target import CategoryTarget, TargetType
 
         user = User(
             email="underfunded_balance@example.com",
@@ -666,7 +666,6 @@ class TestTargetsAPIUnderfunded:
     ) -> None:
         """Test underfunded calculation for Target by Date target."""
         from mybudget.models.target import CategoryTarget, TargetType
-        from mybudget.models.assignment import Assignment
 
         user = User(
             email="underfunded_bydate@example.com",
@@ -718,8 +717,8 @@ class TestTargetsAPIUnderfunded:
         self, client: AsyncClient, db_session: AsyncSession
     ) -> None:
         """Test that fully funded category shows underfunded = 0."""
-        from mybudget.models.target import CategoryTarget, TargetType
         from mybudget.models.assignment import Assignment
+        from mybudget.models.target import CategoryTarget, TargetType
 
         user = User(
             email="fully_funded@example.com",

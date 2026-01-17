@@ -2,12 +2,12 @@ name: Frontend CI
 
 on:
   push:
-    branches: [main, 001-spending-targets-mvp]
+    branches: [main, 001-spending-targets-mvp, 002-shadcn-ui-migration]
     paths:
       - 'frontend/**'
       - '.github/workflows/frontend.yml'
   pull_request:
-    branches: [main, 001-spending-targets-mvp]
+    branches: [main, 001-spending-targets-mvp, 002-shadcn-ui-migration]
     paths:
       - 'frontend/**'
       - '.github/workflows/frontend.yml'

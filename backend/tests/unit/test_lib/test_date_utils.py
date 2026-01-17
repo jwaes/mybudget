@@ -1,7 +1,7 @@
 """
 Unit tests for date utilities.
 """
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 
 import pytest
 
@@ -25,7 +25,7 @@ class TestDateUtils:
 
     def test_get_month_first_day_from_datetime(self) -> None:
         """Test getting first day from a datetime."""
-        dt = datetime(2026, 1, 16, 14, 30, 0, tzinfo=timezone.utc)
+        dt = datetime(2026, 1, 16, 14, 30, 0, tzinfo=UTC)
         result = get_month_first_day(dt)
         assert result == date(2026, 1, 1)
 

@@ -3,17 +3,17 @@ Integration tests for reconciliation workflow.
 
 Tests the complete reconciliation lifecycle: start, mark cleared, adjust, complete.
 """
-from decimal import Decimal
 from datetime import date, timedelta
+from decimal import Decimal
 
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from mybudget.lib.auth import hash_password
-from mybudget.lib.session import create_session_token, SESSION_COOKIE_NAME
-from mybudget.models.user import User
+from mybudget.lib.session import SESSION_COOKIE_NAME, create_session_token
 from mybudget.models.account import Account, AccountType
+from mybudget.models.user import User
 
 
 @pytest.mark.integration
@@ -415,7 +415,7 @@ async def test_multiple_reconciliations_for_account(
 
     # List reconciliations for account
     list_response = await client.get(
-        f"/api/reconciliations/", params={"account_id": account_id}
+        "/api/reconciliations/", params={"account_id": account_id}
     )
     assert list_response.status_code == 200
     reconciliations = list_response.json()

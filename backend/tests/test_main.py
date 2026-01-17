@@ -3,7 +3,6 @@ Tests for FastAPI application startup and configuration.
 """
 
 import pytest
-from fastapi.testclient import TestClient
 from httpx import AsyncClient
 
 from mybudget.main import app
