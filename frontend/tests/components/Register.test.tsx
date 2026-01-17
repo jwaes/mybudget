@@ -118,8 +118,16 @@ describe('RegisterPage', () => {
       { timeout: 3000 }
     )
 
-    const emailInput = screen.getByLabelText(/email/i)
+    const emailInput = screen.getByLabelText(/email/i) as HTMLInputElement
     await user.type(emailInput, 'invalid-email')
+
+    // Verify the value was typed
+    await waitFor(
+      () => {
+        expect(emailInput.value).toBe('invalid-email')
+      },
+      { timeout: 3000 }
+    )
 
     const submitButton = screen.getByRole('button', { name: /create account/i })
     await user.click(submitButton)
