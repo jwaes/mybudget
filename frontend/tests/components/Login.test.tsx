@@ -111,9 +111,12 @@ describe('LoginPage', () => {
     const user = userEvent.setup()
     renderLoginPage()
 
+    // Wait for form to be fully rendered and enabled (after initial auth check)
     await waitFor(
       () => {
-        expect(screen.getByLabelText(/email/i)).toBeInTheDocument()
+        const emailInput = screen.getByLabelText(/email/i)
+        expect(emailInput).toBeInTheDocument()
+        expect(emailInput).not.toBeDisabled()
       },
       { timeout: 3000 }
     )
