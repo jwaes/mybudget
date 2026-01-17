@@ -112,9 +112,13 @@ describe('RegisterPage', () => {
     const submitButton = screen.getByRole('button', { name: /register|sign up|create account/i })
     await user.click(submitButton)
 
-    await waitFor(() => {
-      expect(screen.getByText(/valid email|invalid email/i)).toBeInTheDocument()
-    })
+    // Wait for validation error to appear
+    await waitFor(
+      () => {
+        expect(screen.getByText(/please enter a valid email address/i)).toBeInTheDocument()
+      },
+      { timeout: 3000 }
+    )
   })
 
   it('should show validation error for password shorter than 8 characters', async () => {
