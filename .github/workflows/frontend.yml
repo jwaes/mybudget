@@ -76,7 +76,7 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://mybudget_test:testpassword@localhost:5432/mybudget_test
-      SECRET_KEY: test-secret-key-for-ci
+      SECRET_KEY: test-secret-key-for-ci-minimum-32-chars
       ENVIRONMENT: test
 
     steps:
