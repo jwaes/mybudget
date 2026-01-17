@@ -4,6 +4,7 @@ Pytest configuration and fixtures for MyBudget tests.
 Provides database session fixtures and test utilities.
 """
 import asyncio
+import os
 from collections.abc import AsyncGenerator, Generator
 from typing import Any
 
@@ -22,7 +23,12 @@ from mybudget.db.session import get_db
 from mybudget.main import app
 
 # Test database URL (use a separate test database)
-TEST_DATABASE_URL = "postgresql+psycopg://mybudget:mybudget@localhost:5434/mybudget_test"
+# Defaults to local dev, but CI sets DATABASE_URL environment variable
+_db_url = os.getenv("DATABASE_URL", "postgresql+psycopg://mybudget:mybudget@localhost:5434/mybudget_test")
+# Ensure async driver is specified
+if _db_url.startswith("postgresql://"):
+    _db_url = _db_url.replace("postgresql://", "postgresql+psycopg://", 1)
+TEST_DATABASE_URL = _db_url
 
 
 @pytest.fixture(scope="session")
