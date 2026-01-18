@@ -8,7 +8,7 @@ from decimal import Decimal
 from enum import Enum
 from uuid import UUID
 
-from sqlalchemy import Date, DateTime, ForeignKey, Numeric, String, Text
+from sqlalchemy import CheckConstraint, Date, DateTime, ForeignKey, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import ENUM
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -27,6 +27,23 @@ class TransactionState(str, Enum):
     INBOX = "INBOX"
     APPROVED = "APPROVED"
     CLEARED = "CLEARED"
+
+
+class CategorizationSource(str, Enum):
+    """Source of transaction categorization.
+
+    Used to track how a transaction was categorized for analytics
+    and future ML improvements.
+
+    Attributes:
+        MANUAL: User manually selected the category
+        RULE: Category was assigned by a matching rule
+        ML_SUGGESTED: Category was suggested by ML and user accepted
+    """
+
+    MANUAL = "MANUAL"
+    RULE = "RULE"
+    ML_SUGGESTED = "ML_SUGGESTED"
 
 
 class Transaction(Base):
@@ -97,6 +114,22 @@ class Transaction(Base):
     cleared_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
+    )
+    categorization_source: Mapped[CategorizationSource | None] = mapped_column(
+        ENUM(CategorizationSource, name="categorization_source", create_type=True),
+        nullable=True,
+        index=True,
+    )
+    confidence_score: Mapped[Decimal | None] = mapped_column(
+        Numeric(3, 2),
+        nullable=True,
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "confidence_score IS NULL OR (confidence_score >= 0 AND confidence_score <= 1)",
+            name="ck_transactions_confidence_score_range",
+        ),
     )
 
     def __repr__(self) -> str:

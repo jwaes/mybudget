@@ -33,6 +33,9 @@ dependencies = [
     "pwdlib[argon2]>=0.2.0",
     "fastapi-csrf-protect>=0.3.0",
     "python-dotenv>=1.0.0",
+    # Observability
+    "structlog>=24.1.0",
+    "prometheus-fastapi-instrumentator>=7.0.0",
 ]
 
 [project.optional-dependencies]

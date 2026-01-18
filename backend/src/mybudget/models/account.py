@@ -28,6 +28,15 @@ class AccountType(str, Enum):
     SAVINGS = "SAVINGS"
 
 
+class SyncStatus(str, Enum):
+    """Account sync status enumeration."""
+
+    SUCCESS = "SUCCESS"
+    FAILED = "FAILED"
+    PENDING = "PENDING"
+    NEVER_SYNCED = "NEVER_SYNCED"
+
+
 class Account(Base):
     """
     Bank account model.
@@ -75,6 +84,19 @@ class Account(Base):
         nullable=False,
         insert_default=utc_now,
         onupdate=utc_now,
+    )
+    sync_status: Mapped[SyncStatus] = mapped_column(
+        ENUM(SyncStatus, name="sync_status", create_type=True),
+        nullable=False,
+        insert_default=SyncStatus.NEVER_SYNCED,
+    )
+    last_sync_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    sync_error: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True,
     )
 
     def __repr__(self) -> str:
