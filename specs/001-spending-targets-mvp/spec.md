@@ -173,6 +173,23 @@ Users need targets to behave consistently across month boundaries so they can tr
 - **FR-009**: System MUST auto-categorize transactions matching rules but still require approval
 - **FR-010**: System MUST track transaction state (pending in inbox, approved, cleared for reconciliation)
 
+**Transaction Categorization Extensibility** *(ML-ready interface)*
+
+- **FR-043**: System MUST track categorization source for each transaction: MANUAL (user-assigned), RULE (matched by categorization rule), or ML_SUGGESTED (future: machine learning suggestion)
+- **FR-044**: System MUST support an optional confidence score (0.0-1.0) for categorization suggestions, nullable for MANUAL and RULE sources
+- **FR-045**: System MUST support batch approval of multiple transactions in the inbox with the same suggested category
+
+**Transaction Search and Filtering**
+
+- **FR-046**: System MUST provide transaction search by payee name (partial match, case-insensitive)
+- **FR-047**: System MUST provide transaction search by memo content (partial match, case-insensitive)
+- **FR-048**: System MUST provide transaction filtering by date range (start date, end date)
+- **FR-049**: System MUST provide transaction filtering by amount range (minimum, maximum)
+- **FR-050**: System MUST provide transaction filtering by category (including "uncategorized" option)
+- **FR-051**: System MUST provide transaction filtering by account
+- **FR-052**: System MUST provide transaction filtering by status (inbox, approved, cleared)
+- **FR-053**: System MUST display uncategorized transaction count indicator in navigation (badge showing count of inbox transactions awaiting categorization)
+
 **Category Management**
 
 - **FR-011**: System MUST support category groups (e.g., "Monthly Bills", "Daily Living")
@@ -229,7 +246,7 @@ Users need targets to behave consistently across month boundaries so they can tr
 ### Key Entities
 
 - **Account**: Represents a bank checking or savings account; attributes include account name, type (checking/savings), current balance
-- **Transaction**: Represents a financial transaction; attributes include date, payee, amount, account, category (nullable until approved), state (inbox/approved/cleared), memo
+- **Transaction**: Represents a financial transaction; attributes include date, payee, amount, account, category (nullable until approved), state (inbox/approved/cleared), memo, categorization_source (MANUAL/RULE/ML_SUGGESTED), confidence_score (0.0-1.0, nullable)
 - **CategoryGroup**: Organizational container for categories; attributes include group name, display order
 - **Category**: Budget category for tracking spending; attributes include category name, parent group, monthly values (available, funded_this_month, activity)
 - **CategoryTarget**: Spending target configuration for a category; attributes include target type (Monthly Needed/Target Balance/Target by Date), target amount, target date (nullable), category reference
@@ -252,6 +269,9 @@ Users need targets to behave consistently across month boundaries so they can tr
 - **SC-006**: 90% of users successfully complete their first reconciliation without requiring support
 - **SC-007**: Users understand target types and can set appropriate targets for 3+ categories within first session
 - **SC-008**: Categorization rules reduce manual categorization effort by at least 40% after first month of use
+- **SC-009**: Users can find specific transactions using search in under 5 seconds
+- **SC-010**: Users can batch-approve 10+ similarly-categorized transactions in under 10 seconds
+- **SC-011**: Uncategorized transaction count badge updates within 2 seconds of inbox changes
 
 ## Assumptions
 
