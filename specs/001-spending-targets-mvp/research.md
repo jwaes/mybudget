@@ -267,4 +267,48 @@ Detailed source URLs available in research agent outputs (agent IDs: a805ff9, af
 
 ---
 
+---
+
+## Clarification Session Additions (2026-01-18)
+
+The following decisions were made during the `/speckit.clarify` session:
+
+### Password Storage
+
+**Decision**: Argon2/bcrypt hashing only (stateless, standard)
+
+**Rationale**: Modern password hashing is a security baseline. Argon2id already configured in pwdlib dependency.
+
+### Bank Sync Failure Handling
+
+**Decision**: Show sync status indicator + manual retry button on failure
+
+**Rationale**: Users need visibility into sync status without automatic retries that might mask persistent issues.
+
+**Implementation**: Added FR-010a and FR-010b to spec for sync status indicator and manual retry.
+
+### Observability
+
+**Decision**: Full observability - logging, metrics, health checks + Prometheus endpoint
+
+**Rationale**: Production-ready monitoring from day one. Essential for debugging financial data issues.
+
+**Implementation**:
+- FR-OBS-001: Structured logging for errors and key user actions
+- FR-OBS-002: Prometheus-compatible metrics endpoint
+- FR-OBS-003: Health check endpoint
+- FR-OBS-004: Metrics for latency, error rates, sessions, transaction counts
+
+**Libraries**:
+- prometheus-fastapi-instrumentator for automatic metrics
+- structlog for JSON logging
+
+### Availability/Uptime
+
+**Decision**: Best effort (no explicit SLA, standard hosting)
+
+**Rationale**: MVP phase doesn't require SLA commitments. Focus on feature validation first.
+
+---
+
 **Status**: Phase 0 research complete. Ready to proceed to Phase 1: Data Model & API Contracts.

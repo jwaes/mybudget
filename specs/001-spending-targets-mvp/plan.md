@@ -1,6 +1,6 @@
 # Implementation Plan: MyBudget MVP - Spending Targets
 
-**Branch**: `001-spending-targets-mvp` | **Date**: 2026-01-16 (Updated 2026-01-17) | **Spec**: [spec.md](./spec.md)
+**Branch**: `001-spending-targets-mvp` | **Date**: 2026-01-16 (Updated 2026-01-18) | **Spec**: [spec.md](./spec.md)
 **Input**: Feature specification from `/specs/001-spending-targets-mvp/spec.md`
 
 ## Summary
@@ -11,12 +11,15 @@ Technical approach: Python web application with a relational database for transa
 
 **Update 2026-01-17**: Added User Story 0 (Authentication UI) - login and registration pages for user authentication before accessing budget features.
 
+**Update 2026-01-18**: Added clarification session decisions - password hashing (Argon2), bank sync failure handling (status indicator + retry), full observability (Prometheus + logging + health checks), availability expectations (best effort, no SLA).
+
 ## Technical Context
 
 **Language/Version**: Python 3.11 (backend), TypeScript 5.8 (frontend)
 **Primary Dependencies**: FastAPI (async web framework), SQLAlchemy 2.0 (ORM), Alembic (migrations), Pydantic V2 (validation/serialization); React 19, Vite, React Hook Form (frontend)
 **Storage**: PostgreSQL 15+ (relational database for financial data integrity, ACID transactions)
 **Testing**: pytest (test framework), pytest-cov (coverage), pytest-asyncio (async tests), Faker (test data generation); Vitest + React Testing Library (frontend)
+**Observability**: prometheus-fastapi-instrumentator (Prometheus metrics), structlog (JSON logging), health check endpoint
 **Target Platform**: Web application (browser-based UI + REST API backend)
 **Project Type**: Web application (backend API + frontend client)
 **Performance Goals**: <2 seconds for all operations (per SC-010 assumption), <200ms API response p95, real-time UI updates for funding actions
@@ -26,6 +29,7 @@ Technical approach: Python web application with a relational database for transa
 - Timezone-aware: month boundaries respect user's local timezone
 - Single-user MVP: no multi-tenancy complexity
 - 30-minute session timeout for security
+- Availability: best effort (no explicit SLA for MVP phase)
 **Scale/Scope**:
 - 1-5 bank accounts per user
 - 100-500 transactions/month
@@ -302,11 +306,14 @@ Research findings documented in [research.md](./research.md):
 |----------|--------|-----------|
 | Frontend Framework | React 19 + TypeScript | Best-in-class form handling, enterprise component ecosystem |
 | Bank Sync | CSV Import for MVP | API costs prohibitive, validate core value first |
+| Bank Sync Failure | Status indicator + manual retry | User visibility without automatic retries masking issues |
 | Authentication | Session-based with HTTP-only cookies | XSS protection, simplicity for single-user MVP |
-| Password Hashing | Argon2id (pwdlib) | OWASP 2026 standard |
+| Password Hashing | Argon2id (pwdlib) | OWASP 2026 standard, stateless hashing |
 | Decimal Precision | Python decimal.Decimal | Standard library, financial precision |
 | Database Migrations | Alembic | Standard for SQLAlchemy |
 | API Documentation | FastAPI OpenAPI/Swagger | Auto-generated, interactive docs |
+| Observability | Prometheus + structlog + health checks | Production-ready monitoring from day one |
+| Availability | Best effort (no SLA) | MVP phase, focus on feature validation |
 
 ## Phase 1: Design Artifacts
 

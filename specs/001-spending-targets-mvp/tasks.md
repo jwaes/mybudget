@@ -2,7 +2,7 @@
 
 **Input**: Design documents from `/specs/001-spending-targets-mvp/`
 **Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/, quickstart.md
-**Last Updated**: 2026-01-17
+**Last Updated**: 2026-01-18
 
 **Tests**: Per constitution's TDD principle, ALL tasks include tests. Red-Green-Refactor is mandatory.
 
@@ -365,7 +365,112 @@
 
 ---
 
-## Phase 9: Polish & Cross-Cutting Concerns
+## Phase 9: Transaction Search and Filtering (FR-046 to FR-053)
+
+**Goal**: Users can search and filter transactions efficiently
+
+**Dependencies**: User Story 1 (COMPLETE - transactions exist)
+
+**Added**: 2026-01-18 from clarification session updates to spec.md
+
+### Tests for Transaction Search (TDD)
+
+- [ ] T181 [P] Test: Write unit test for transaction search by payee in backend/tests/unit/test_services/test_transaction_service.py
+- [ ] T182 [P] Test: Write unit test for transaction search by memo in backend/tests/unit/test_services/test_transaction_service.py
+- [ ] T183 [P] Test: Write unit test for transaction filtering (date, amount, category, account, status) in backend/tests/unit/test_services/test_transaction_service.py
+- [ ] T184 [P] Test: Write contract test for GET /transactions with search/filter params in backend/tests/contract/test_transactions_api.py
+
+### Implementation for Transaction Search
+
+- [ ] T185 Add transaction search by payee (FR-046, partial match, case-insensitive) to backend/src/mybudget/services/transaction_service.py
+- [ ] T186 Add transaction search by memo (FR-047, partial match, case-insensitive) to backend/src/mybudget/services/transaction_service.py
+- [ ] T187 Add transaction filtering by date range (FR-048) to backend/src/mybudget/services/transaction_service.py
+- [ ] T188 Add transaction filtering by amount range (FR-049) to backend/src/mybudget/services/transaction_service.py
+- [ ] T189 Add transaction filtering by category (FR-050) including uncategorized to backend/src/mybudget/services/transaction_service.py
+- [ ] T190 Add transaction filtering by account (FR-051) to backend/src/mybudget/services/transaction_service.py
+- [ ] T191 Add transaction filtering by status (FR-052) to backend/src/mybudget/services/transaction_service.py
+- [ ] T192 Update GET /transactions endpoint with search/filter query params in backend/src/mybudget/api/transactions.py
+- [ ] T193 [P] Create TransactionSearch component in frontend/src/components/TransactionSearch.tsx
+- [ ] T194 [P] Create TransactionFilters component in frontend/src/components/TransactionFilters.tsx
+- [ ] T195 Add uncategorized transaction count badge to navigation (FR-053) in frontend/src/components/layout/
+- [ ] T196 Integrate search/filter into Transactions page in frontend/src/pages/Transactions.tsx
+- [ ] T197 Test: Write component test for TransactionSearch in frontend/tests/components/TransactionSearch.test.tsx
+- [ ] T198 Test: Write component test for TransactionFilters in frontend/tests/components/TransactionFilters.test.tsx
+
+**Checkpoint**: Transaction search and filtering complete - users can find transactions quickly
+
+---
+
+## Phase 10: Observability (FR-OBS-001 to FR-OBS-004)
+
+**Goal**: Production-ready monitoring with structured logging, Prometheus metrics, and health checks
+
+**Dependencies**: None (cross-cutting concern, can start anytime)
+
+**Added**: 2026-01-18 from clarification session - decided on full observability stack
+
+### Implementation for Observability
+
+- [ ] T199 Add structlog and prometheus-fastapi-instrumentator to backend/pyproject.toml
+- [ ] T200 Configure structlog for JSON logging in backend/src/mybudget/lib/logging.py
+- [ ] T201 Create health check endpoint (FR-OBS-003) returning system status in backend/src/mybudget/api/health.py
+- [ ] T202 Setup Prometheus metrics endpoint (FR-OBS-002) using prometheus-fastapi-instrumentator in backend/src/mybudget/main.py
+- [ ] T203 Add logging for key user actions (FR-OBS-001): login, logout, transaction approval, funding operations
+- [ ] T204 Configure metrics for latency, error rates, sessions, transaction counts (FR-OBS-004)
+- [ ] T205 Test: Write test for health check endpoint in backend/tests/contract/test_health_api.py
+- [ ] T206 Test: Write test for metrics endpoint accessibility in backend/tests/contract/test_health_api.py
+
+**Checkpoint**: Observability infrastructure complete - ready for production monitoring
+
+---
+
+## Phase 11: Bank Sync Status (FR-010a, FR-010b)
+
+**Goal**: Users have visibility into bank sync status and can retry failed syncs
+
+**Dependencies**: User Story 1 (COMPLETE - accounts exist)
+
+**Added**: 2026-01-18 from clarification session - decided on status indicator + manual retry
+
+### Implementation for Bank Sync Status
+
+- [ ] T207 Add sync_status, last_sync_at, sync_error fields to Account model in backend/src/mybudget/models/account.py
+- [ ] T208 Generate Alembic migration for account sync status fields
+- [ ] T209 Add sync status update logic to CSV import (simulate sync) in backend/src/mybudget/services/transaction_service.py
+- [ ] T210 Create POST /accounts/{id}/retry-sync endpoint in backend/src/mybudget/api/accounts.py
+- [ ] T211 Add sync status indicator (FR-010a) per account in frontend/src/components/AccountList.tsx
+- [ ] T212 Add manual retry button (FR-010b) for failed syncs in frontend/src/components/AccountList.tsx
+- [ ] T213 Test: Write component test for sync status display in frontend/tests/components/AccountList.test.tsx
+
+**Checkpoint**: Bank sync status visibility complete - users know when sync fails
+
+---
+
+## Phase 12: Categorization Extensibility (FR-043 to FR-045)
+
+**Goal**: Transaction categorization interface supports future ML integration
+
+**Dependencies**: User Story 1 (COMPLETE - transactions exist)
+
+**Added**: 2026-01-18 from spec updates - ML-ready interface
+
+### Implementation for Categorization Extensibility
+
+- [ ] T214 Add categorization_source enum (MANUAL, RULE, ML_SUGGESTED) to Transaction model in backend/src/mybudget/models/transaction.py
+- [ ] T215 Add confidence_score (nullable, 0.0-1.0) field to Transaction model
+- [ ] T216 Generate Alembic migration for categorization fields
+- [ ] T217 Update transaction approval workflow to set categorization_source = MANUAL
+- [ ] T218 Update rule-based categorization to set categorization_source = RULE
+- [ ] T219 Add batch approval endpoint (FR-045) for multiple transactions in backend/src/mybudget/api/transactions.py
+- [ ] T220 Add batch approval UI in TransactionInbox component (select multiple, approve all with same category)
+- [ ] T221 Test: Write unit test for categorization source tracking in backend/tests/unit/test_services/test_transaction_service.py
+- [ ] T222 Test: Write contract test for batch approval endpoint in backend/tests/contract/test_transactions_api.py
+
+**Checkpoint**: Categorization extensibility complete - ready for future ML integration
+
+---
+
+## Phase 13: Polish & Cross-Cutting Concerns
 
 **Purpose**: Improvements that affect multiple user stories
 
@@ -415,23 +520,25 @@
 
 ### Critical Path (Next Steps)
 
-Current state: Phase 1-4 (partial) and Phase 6-7 (partial) complete. 127 tasks completed, 61 remaining.
+Current state: Phases 1-8 COMPLETE. 172 tasks completed, 50 remaining.
 
 **Completed**:
 - Phase 1: Setup ✅
 - Phase 2: Foundation ✅
 - Phase 2.5: User Story 0 (Auth UI) ✅
 - Phase 3: User Story 1 (Accounts & Transactions) ✅
-- Phase 4: User Story 2 (Categories & Budget View) - Backend & display ✅, Category Management UI pending
+- Phase 4: User Story 2 (Categories & Budget View) ✅
+- Phase 5: User Story 3 (Reconciliation) ✅
 - Phase 6: User Story 4 (Spending Targets) ✅ Core Feature
-- Phase 7: User Story 5 (Funding Guidance) - Backend complete, Frontend partial
+- Phase 7: User Story 5 (Funding Guidance) ✅
+- Phase 8: User Story 6 (Month Rollover) ✅
 
-**Next Steps**:
-1. **⭐ Complete 002-shadcn-ui-migration FIRST** - Establishes UI foundation, avoids double work
-2. Then return here for remaining tasks using shadcn components:
-   - User Story 3 frontend (T119-T122) - ReconcileModal with shadcn Dialog
-   - User Story 6 (T157-T164) - Month Rollover (backend-focused)
-   - Phase 9 remaining polish (T171, T174-T180)
+**Next Steps** (new features from 2026-01-18 clarification):
+1. **Phase 9: Transaction Search/Filtering** - FR-046 to FR-053 (18 tasks)
+2. **Phase 10: Observability** - FR-OBS-001 to FR-OBS-004 (8 tasks)
+3. **Phase 11: Bank Sync Status** - FR-010a, FR-010b (7 tasks)
+4. **Phase 12: Categorization Extensibility** - FR-043 to FR-045 (9 tasks)
+5. **Phase 13: Polish** - Remaining cross-cutting concerns (8 tasks)
 
 ---
 
@@ -445,20 +552,24 @@ Current state: Phase 1-4 (partial) and Phase 6-7 (partial) complete. 127 tasks c
 - **Commit after each task or logical group**: Keep working tree clean
 - **Stop at checkpoints**: Validate story works independently before moving on
 
-**Total Tasks**: 188 tasks
+**Total Tasks**: 222 tasks
 - Setup: 13 tasks (COMPLETE)
 - Foundational: 30 tasks (COMPLETE)
 - User Story 0: 10 tasks (COMPLETE)
 - User Story 1: 30 tasks (COMPLETE)
-- User Story 2: 33 tasks (25 original + 8 category management UI)
-- User Story 3: 14 tasks
+- User Story 2: 33 tasks (COMPLETE)
+- User Story 3: 14 tasks (COMPLETE)
 - User Story 4: 19 tasks (COMPLETE)
-- User Story 5: 15 tasks
-- User Story 6: 8 tasks
+- User Story 5: 15 tasks (COMPLETE)
+- User Story 6: 8 tasks (COMPLETE)
+- Transaction Search: 18 tasks (NEW - 2026-01-18)
+- Observability: 8 tasks (NEW - 2026-01-18)
+- Bank Sync Status: 7 tasks (NEW - 2026-01-18)
+- Categorization Extensibility: 9 tasks (NEW - 2026-01-18)
 - Polish: 16 tasks
 
-**Completed**: 130 tasks (Phase 1 + Phase 2 + Phase 2.5 + Phase 3 + Phase 4 partial + Phase 6 + T165, T166, T169)
-**Remaining**: 58 tasks (26 blocked by 002-shadcn-ui-migration)
+**Completed**: 172 tasks (Phases 1-8 + partial Phase 13)
+**Remaining**: 50 tasks (Phases 9-12 new features + remaining Phase 13 polish)
 
 ---
 
