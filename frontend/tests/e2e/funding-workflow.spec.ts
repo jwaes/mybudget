@@ -105,7 +105,7 @@ test.describe('Funding Workflow', () => {
       await setupTestData(page)
 
       // Navigate to budget page
-      await page.goto('/')
+      await page.goto('/budget')
 
       // Should show the To Assign amount (from income transaction)
       await expect(page.getByText(/to assign/i)).toBeVisible()
@@ -122,7 +122,7 @@ test.describe('Funding Workflow', () => {
       await setupTestData(page)
 
       // Navigate to budget page
-      await page.goto('/')
+      await page.goto('/budget')
 
       // Should display the Electricity category
       await expect(page.getByText('Electricity')).toBeVisible()
@@ -142,7 +142,7 @@ test.describe('Funding Workflow', () => {
       await setupTestData(page)
 
       // Navigate to budget page
-      await page.goto('/')
+      await page.goto('/budget')
 
       // Wait for budget data to load
       await expect(page.getByText(/to assign/i)).toBeVisible()
@@ -168,7 +168,7 @@ test.describe('Funding Workflow', () => {
       await setupTestData(page)
 
       // Navigate to budget page
-      await page.goto('/')
+      await page.goto('/budget')
 
       // Wait for budget data to load
       await expect(page.getByRole('button', { name: /fund underfunded/i })).toBeVisible()
@@ -210,7 +210,7 @@ test.describe('Funding Workflow', () => {
       })
 
       // Navigate to budget page
-      await page.goto('/')
+      await page.goto('/budget')
 
       // Wait for page to load
       await expect(page.getByText('Electricity')).toBeVisible()
@@ -229,7 +229,7 @@ test.describe('Funding Workflow', () => {
       await setupTestData(page)
 
       // Navigate to budget page
-      await page.goto('/')
+      await page.goto('/budget')
 
       // Wait for budget data to load
       await expect(page.getByText('Electricity')).toBeVisible()
@@ -259,7 +259,7 @@ test.describe('Funding Workflow', () => {
       await setupTestData(page)
 
       // Navigate to budget page
-      await page.goto('/')
+      await page.goto('/budget')
 
       // Wait for budget data to load
       await expect(page.getByText('Electricity')).toBeVisible()
@@ -291,7 +291,7 @@ test.describe('Funding Workflow', () => {
       await setupTestData(page)
 
       // Navigate to budget page
-      await page.goto('/')
+      await page.goto('/budget')
 
       // Wait for budget data to load
       await expect(page.getByRole('button', { name: /fund underfunded/i })).toBeVisible()
@@ -322,7 +322,7 @@ test.describe('Funding Workflow', () => {
       await setupTestData(page)
 
       // Navigate to budget page
-      await page.goto('/')
+      await page.goto('/budget')
 
       // Wait for and click Fund Underfunded
       await expect(page.getByRole('button', { name: /fund underfunded/i })).toBeVisible()
@@ -389,7 +389,7 @@ test.describe('Funding Workflow', () => {
       })
 
       // Navigate to budget page
-      await page.goto('/')
+      await page.goto('/budget')
 
       // Wait for page to load
       await expect(page.getByText('Rent')).toBeVisible()
@@ -457,7 +457,7 @@ test.describe('Funding Workflow', () => {
       })
 
       // Navigate to budget page
-      await page.goto('/')
+      await page.goto('/budget')
 
       // Wait for categories to appear
       await expect(page.getByText('Rent')).toBeVisible()

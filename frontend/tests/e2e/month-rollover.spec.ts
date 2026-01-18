@@ -92,7 +92,7 @@ test.describe('Month Rollover E2E', () => {
       await registerAndLogin(page, 'nav-basic')
 
       // Navigate to budget page
-      await page.goto('/')
+      await page.goto('/budget')
 
       // Should show current month
       const currentMonth = new Date().toLocaleDateString('en-US', {
@@ -135,7 +135,7 @@ test.describe('Month Rollover E2E', () => {
       await setupCategoryWithTarget(page, 'Bills', 'Rent', 'MONTHLY_NEEDED', '200.00')
 
       // Navigate to budget page
-      await page.goto('/')
+      await page.goto('/budget')
 
       // Should show underfunded
       await expect(page.getByText(/underfunded/i)).toBeVisible()
@@ -168,7 +168,7 @@ test.describe('Month Rollover E2E', () => {
       await setupAccountWithIncome(page, '1000.00')
       await setupCategoryWithTarget(page, 'Savings', 'Emergency', 'TARGET_BALANCE', '500.00')
 
-      await page.goto('/')
+      await page.goto('/budget')
 
       // Should show underfunded (500)
       await expect(page.getByText(/underfunded/i)).toBeVisible()
@@ -208,7 +208,7 @@ test.describe('Month Rollover E2E', () => {
         targetDateStr
       )
 
-      await page.goto('/')
+      await page.goto('/budget')
 
       // Should show underfunded (400/4 = 100)
       await expect(page.getByText(/underfunded/i)).toBeVisible()
@@ -232,7 +232,7 @@ test.describe('Month Rollover E2E', () => {
     test('should handle year boundary correctly', async ({ page }) => {
       await registerAndLogin(page, 'year-boundary')
 
-      await page.goto('/')
+      await page.goto('/budget')
 
       // Get current month navigation to December
       const currentDate = new Date()
@@ -269,7 +269,7 @@ test.describe('Month Rollover E2E', () => {
       await setupAccountWithIncome(page, '1000.00')
       await setupCategoryWithTarget(page, 'Bills', 'Utilities', 'MONTHLY_NEEDED', '100.00')
 
-      await page.goto('/')
+      await page.goto('/budget')
 
       // Fund in current month
       await page.getByRole('button', { name: /fund underfunded/i }).click()
@@ -320,7 +320,7 @@ test.describe('Month Rollover E2E', () => {
         futureDate.toISOString().split('T')[0]
       )
 
-      await page.goto('/')
+      await page.goto('/budget')
 
       // Should show all categories
       await expect(page.getByText('Monthly Bill')).toBeVisible()

@@ -190,8 +190,11 @@ test.describe('Authentication', () => {
       // Wait for redirect to dashboard
       await expect(page).toHaveURL(/\/$|\/dashboard/)
 
-      // Find and click logout button
-      await page.getByRole('button', { name: /log out|sign out/i }).click()
+      // Find and click user menu to open dropdown (the user email prefix is shown in the button)
+      await page.locator('[data-sidebar="menu-button"]').click()
+
+      // Click the logout menu item
+      await page.getByRole('menuitem', { name: /log out/i }).click()
 
       // Should be redirected to login
       await expect(page).toHaveURL(/\/login/)
