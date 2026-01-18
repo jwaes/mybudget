@@ -8,7 +8,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from mybudget.models.transaction import TransactionState
+from mybudget.models.transaction import CategorizationSource, TransactionState
 
 
 class TransactionCreate(BaseModel):
@@ -74,6 +74,8 @@ class TransactionResponse(BaseModel):
     updated_at: datetime
     approved_at: datetime | None
     cleared_at: datetime | None
+    categorization_source: CategorizationSource | None = None
+    confidence_score: Decimal | None = None
 
 
 class TransactionWithDetailsResponse(BaseModel):

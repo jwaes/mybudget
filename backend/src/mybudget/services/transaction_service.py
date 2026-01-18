@@ -10,9 +10,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from mybudget.models.account import Account
 from mybudget.models.category import Category
-from mybudget.models.transaction import Transaction, TransactionState
+from mybudget.models.transaction import CategorizationSource, Transaction, TransactionState
 from mybudget.schemas.transaction import (
     TransactionApprove,
+    TransactionBulkResult,
     TransactionCreate,
     TransactionUpdate,
 )
@@ -171,9 +172,10 @@ class TransactionService:
                 return None
             transaction.category_id = data.category_id
 
-        # Update transaction state
+        # Update transaction state and categorization source
         transaction.state = TransactionState.APPROVED
         transaction.approved_at = utc_now()
+        transaction.categorization_source = CategorizationSource.MANUAL
 
         # Update account balance
         await self._update_account_balance(transaction.account_id, transaction.amount)
@@ -182,6 +184,59 @@ class TransactionService:
         await self.db.refresh(transaction)
 
         return transaction
+
+    async def batch_approve_transactions(
+        self,
+        user_id: UUID,
+        transaction_ids: list[UUID],
+        category_id: UUID,
+    ) -> TransactionBulkResult:
+        """
+        Batch approve multiple transactions with the same category (FR-045).
+
+        Args:
+            user_id: Owner user ID
+            transaction_ids: List of transaction IDs to approve
+            category_id: Category to assign to all transactions
+
+        Returns:
+            TransactionBulkResult with success/failure counts
+        """
+        # Verify category exists
+        category = await self._get_category(user_id, category_id)
+        if not category:
+            return TransactionBulkResult(
+                success_count=0,
+                failed_count=len(transaction_ids),
+                failed_ids=transaction_ids,
+            )
+
+        success_count = 0
+        failed_ids: list[UUID] = []
+
+        for transaction_id in transaction_ids:
+            transaction = await self.get_transaction(user_id, transaction_id)
+            if not transaction or transaction.state != TransactionState.INBOX:
+                failed_ids.append(transaction_id)
+                continue
+
+            # Approve the transaction
+            transaction.category_id = category_id
+            transaction.state = TransactionState.APPROVED
+            transaction.approved_at = utc_now()
+            transaction.categorization_source = CategorizationSource.MANUAL
+
+            # Update account balance
+            await self._update_account_balance(transaction.account_id, transaction.amount)
+            success_count += 1
+
+        await self.db.commit()
+
+        return TransactionBulkResult(
+            success_count=success_count,
+            failed_count=len(failed_ids),
+            failed_ids=failed_ids,
+        )
 
     async def unapprove_transaction(
         self, user_id: UUID, transaction_id: UUID

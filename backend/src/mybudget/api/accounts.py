@@ -102,3 +102,27 @@ async def delete_account(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Account not found",
         )
+
+
+@router.post("/{account_id}/retry-sync", response_model=AccountResponse)
+async def retry_sync(
+    account_id: UUID,
+    current_user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> AccountResponse:
+    """
+    Retry sync for an account (FR-010b).
+
+    For MVP with CSV import, this resets the sync status to PENDING
+    and clears any previous error. User can then upload a new CSV.
+    """
+    service = AccountService(db)
+    account = await service.retry_sync(current_user.id, account_id)
+
+    if not account:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Account not found",
+        )
+
+    return AccountResponse.model_validate(account)

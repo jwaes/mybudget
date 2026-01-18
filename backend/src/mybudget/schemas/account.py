@@ -7,7 +7,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from mybudget.models.account import AccountType
+from mybudget.models.account import AccountType, SyncStatus
 
 
 class AccountCreate(BaseModel):
@@ -37,6 +37,9 @@ class AccountResponse(BaseModel):
     initial_balance: Decimal
     created_at: datetime
     updated_at: datetime
+    sync_status: SyncStatus
+    last_sync_at: datetime | None = None
+    sync_error: str | None = None
 
 
 class AccountListResponse(BaseModel):

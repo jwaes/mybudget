@@ -1,13 +1,14 @@
 """
 Account service for business logic operations.
 """
+from datetime import UTC, datetime
 from decimal import Decimal
 from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from mybudget.models.account import Account
+from mybudget.models.account import Account, SyncStatus
 from mybudget.schemas.account import AccountCreate, AccountUpdate
 
 
@@ -146,3 +147,55 @@ class AccountService:
         if account:
             account.balance += amount
             await self.db.commit()
+
+    async def update_sync_status(
+        self,
+        account_id: UUID,
+        status: SyncStatus,
+        error: str | None = None,
+    ) -> None:
+        """
+        Update account sync status (FR-010a).
+
+        Args:
+            account_id: Account ID
+            status: New sync status
+            error: Error message if status is FAILED
+        """
+        stmt = select(Account).where(Account.id == account_id)
+        result = await self.db.execute(stmt)
+        account = result.scalar_one_or_none()
+
+        if account:
+            account.sync_status = status
+            account.last_sync_at = datetime.now(UTC)
+            account.sync_error = error if status == SyncStatus.FAILED else None
+            await self.db.commit()
+
+    async def retry_sync(
+        self, user_id: UUID, account_id: UUID
+    ) -> Account | None:
+        """
+        Retry sync for an account (FR-010b).
+
+        Resets the sync status to PENDING and clears any previous error.
+        For MVP with CSV import, this allows user to upload a new CSV.
+
+        Args:
+            user_id: Owner user ID (for access control)
+            account_id: Account ID
+
+        Returns:
+            Updated account if found, None otherwise
+        """
+        account = await self.get_account(user_id, account_id)
+        if not account:
+            return None
+
+        account.sync_status = SyncStatus.PENDING
+        account.sync_error = None
+
+        await self.db.commit()
+        await self.db.refresh(account)
+
+        return account

@@ -14,6 +14,8 @@ from mybudget.db.session import get_db
 from mybudget.models.transaction import TransactionState
 from mybudget.schemas.transaction import (
     TransactionApprove,
+    TransactionBulkApprove,
+    TransactionBulkResult,
     TransactionCreate,
     TransactionListResponse,
     TransactionResponse,
@@ -191,3 +193,24 @@ async def delete_transaction(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Transaction not found",
         )
+
+
+@router.post("/batch-approve", response_model=TransactionBulkResult)
+async def batch_approve_transactions(
+    data: TransactionBulkApprove,
+    current_user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> TransactionBulkResult:
+    """
+    Batch approve multiple transactions with the same category (FR-045).
+
+    Approves multiple transactions at once, all with the same category.
+    Returns count of successes and failures.
+    """
+    service = TransactionService(db)
+    result = await service.batch_approve_transactions(
+        current_user.id,
+        data.transaction_ids,
+        data.category_id,
+    )
+    return result
