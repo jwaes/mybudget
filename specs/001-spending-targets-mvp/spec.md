@@ -156,6 +156,7 @@ Users need targets to behave consistently across month boundaries so they can tr
 - **FR-AUTH-007**: System MUST automatically expire sessions after 30 minutes of inactivity
 - **FR-AUTH-008**: System MUST validate email format and password strength during registration
 - **FR-AUTH-009**: System MUST prevent duplicate email registration with clear error message
+- **FR-AUTH-010**: System MUST store passwords using bcrypt or argon2 hashing (never plaintext or reversible encryption)
 
 **Account Management**
 
@@ -172,6 +173,8 @@ Users need targets to behave consistently across month boundaries so they can tr
 - **FR-008**: Users MUST be able to create categorization rules (payee → category mappings)
 - **FR-009**: System MUST auto-categorize transactions matching rules but still require approval
 - **FR-010**: System MUST track transaction state (pending in inbox, approved, cleared for reconciliation)
+- **FR-010a**: System MUST display sync status indicator per account (last sync time, success/failure state)
+- **FR-010b**: System MUST provide manual retry button when bank sync fails
 
 **Transaction Categorization Extensibility** *(ML-ready interface)*
 
@@ -243,6 +246,13 @@ Users need targets to behave consistently across month boundaries so they can tr
 - **FR-041**: System MUST adjust Target by Date calculations based on months_left to target date
 - **FR-042**: System MUST preserve target configurations across month boundaries
 
+**Observability**
+
+- **FR-OBS-001**: System MUST provide structured logging for errors and key user actions (login, transaction approval, funding operations)
+- **FR-OBS-002**: System MUST expose a Prometheus-compatible metrics endpoint
+- **FR-OBS-003**: System MUST provide a health check endpoint returning system status
+- **FR-OBS-004**: System MUST track and expose metrics for: request latency, error rates, active sessions, transaction processing counts
+
 ### Key Entities
 
 - **Account**: Represents a bank checking or savings account; attributes include account name, type (checking/savings), current balance
@@ -285,6 +295,16 @@ Users need targets to behave consistently across month boundaries so they can tr
 8. **Reconciliation frequency**: Users expected to reconcile monthly aligned with statement cycles; system does not enforce reconciliation cadence
 9. **Data retention**: All transaction history retained indefinitely; no automatic archival or deletion
 10. **Performance baseline**: System expected to handle typical personal finance scale (1-5 accounts, 100-500 transactions/month, 20-50 categories) with response times under 2 seconds for all operations
+11. **Availability**: Best effort availability with standard hosting; no explicit SLA or uptime guarantees for MVP
+
+## Clarifications
+
+### Session 2026-01-18
+
+- Q: Password storage standard? → A: bcrypt/argon2 hashing only (stateless, standard)
+- Q: Bank sync failure handling? → A: Show sync status indicator + manual retry button on failure
+- Q: Observability requirements? → A: Full observability: logging, metrics, health checks + Prometheus endpoint
+- Q: Availability/uptime expectations? → A: Best effort (no explicit SLA, standard hosting)
 
 ## Out of Scope (Explicit Exclusions)
 
