@@ -7,7 +7,7 @@
  * Step 3: Review, create adjustment if needed, complete
  */
 
-import { useState, useEffect, type FormEvent } from 'react'
+import { useState, useEffect, useCallback, type FormEvent } from 'react'
 import { reconciliationService } from '@/services/reconciliationService'
 import { transactionService } from '@/services/transactionService'
 import { categoryService } from '@/services/categoryService'
@@ -88,21 +88,7 @@ export function ReconcileModal({
     }
   }, [isOpen])
 
-  // Fetch transactions when reconciliation is created
-  useEffect(() => {
-    if (reconciliation && step === 'transactions') {
-      fetchTransactions()
-    }
-  }, [reconciliation, step])
-
-  // Fetch category groups for adjustment dropdown
-  useEffect(() => {
-    if (step === 'review') {
-      fetchCategoryGroups()
-    }
-  }, [step])
-
-  const fetchTransactions = async () => {
+  const fetchTransactions = useCallback(async () => {
     try {
       // Fetch approved and cleared transactions for this account
       const response = await transactionService.list({
@@ -122,9 +108,9 @@ export function ReconcileModal({
     } catch {
       setError('Failed to fetch transactions')
     }
-  }
+  }, [accountId])
 
-  const fetchCategoryGroups = async () => {
+  const fetchCategoryGroups = useCallback(async () => {
     try {
       const response = await categoryService.list()
       setCategoryGroups(response.groups)
@@ -137,7 +123,21 @@ export function ReconcileModal({
     } catch {
       // Non-critical, just for adjustment dropdown
     }
-  }
+  }, [])
+
+  // Fetch transactions when reconciliation is created
+  useEffect(() => {
+    if (reconciliation && step === 'transactions') {
+      fetchTransactions()
+    }
+  }, [reconciliation, step, fetchTransactions])
+
+  // Fetch category groups for adjustment dropdown
+  useEffect(() => {
+    if (step === 'review') {
+      fetchCategoryGroups()
+    }
+  }, [step, fetchCategoryGroups])
 
   const handleStartReconciliation = async (e: FormEvent) => {
     e.preventDefault()

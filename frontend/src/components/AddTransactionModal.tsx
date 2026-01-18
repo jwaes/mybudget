@@ -4,7 +4,7 @@
  * Simple form to manually create transactions for testing purposes.
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { transactionService } from '@/services/transactionService'
 import { accountService } from '@/services/accountService'
 import type { Account } from '@/types/account'
@@ -53,6 +53,20 @@ export function AddTransactionModal({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const loadAccounts = useCallback(async () => {
+    try {
+      const response = await accountService.list()
+      setAccounts(response.accounts)
+      const firstAccount = response.accounts[0]
+      // Set first account as default if no preselected account
+      if (firstAccount) {
+        setAccountId((current) => current || firstAccount.id)
+      }
+    } catch (err) {
+      console.error('Failed to load accounts:', err)
+    }
+  }, [])
+
   useEffect(() => {
     if (isOpen) {
       loadAccounts()
@@ -68,20 +82,7 @@ export function AddTransactionModal({
         setAccountId(preselectedAccountId)
       }
     }
-  }, [isOpen, preselectedAccountId])
-
-  async function loadAccounts() {
-    try {
-      const response = await accountService.list()
-      setAccounts(response.accounts)
-      const firstAccount = response.accounts[0]
-      if (!accountId && firstAccount) {
-        setAccountId(firstAccount.id)
-      }
-    } catch (err) {
-      console.error('Failed to load accounts:', err)
-    }
-  }
+  }, [isOpen, preselectedAccountId, loadAccounts])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()

@@ -4,7 +4,7 @@
  * Displays inbox (unapproved) transactions with ability to approve them.
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { transactionService } from '@/services/transactionService'
 import { categoryService } from '@/services/categoryService'
 import type { Transaction } from '@/types/transaction'
@@ -46,11 +46,7 @@ export function TransactionInbox({
   const [error, setError] = useState<string | null>(null)
   const [selectedCategory, setSelectedCategory] = useState<Record<string, string>>({})
 
-  useEffect(() => {
-    loadData()
-  }, [accountId])
-
-  async function loadData() {
+  const loadData = useCallback(async () => {
     try {
       setIsLoading(true)
       setError(null)
@@ -65,7 +61,11 @@ export function TransactionInbox({
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [accountId])
+
+  useEffect(() => {
+    loadData()
+  }, [loadData])
 
   async function handleApprove(transactionId: string) {
     const selection = selectedCategory[transactionId]

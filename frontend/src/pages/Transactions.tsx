@@ -4,7 +4,7 @@
  * Displays all transactions and provides access to the inbox.
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { TransactionInbox } from '@/components/TransactionInbox'
 import { CSVImport } from '@/components/CSVImport'
 import { AddTransactionModal } from '@/components/AddTransactionModal'
@@ -44,20 +44,23 @@ export function TransactionsPage() {
   const [error, setError] = useState<string | null>(null)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
 
+  // Load accounts on mount
   useEffect(() => {
-    loadData()
-  }, [activeTab, selectedAccountId])
+    async function loadAccounts() {
+      try {
+        const accountsResponse = await accountService.list()
+        setAccounts(accountsResponse.accounts)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load accounts')
+      }
+    }
+    loadAccounts()
+  }, [])
 
-  async function loadData() {
+  const loadData = useCallback(async () => {
     try {
       setIsLoading(true)
       setError(null)
-
-      // Load accounts if we haven't yet
-      if (accounts.length === 0) {
-        const accountsResponse = await accountService.list()
-        setAccounts(accountsResponse.accounts)
-      }
 
       // Load transactions based on active tab
       if (activeTab === 'all') {
@@ -71,7 +74,11 @@ export function TransactionsPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [activeTab, selectedAccountId])
+
+  useEffect(() => {
+    loadData()
+  }, [loadData])
 
   function handleTransactionApproved() {
     // Refresh transactions list if on 'all' tab
