@@ -8,6 +8,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from prometheus_fastapi_instrumentator import Instrumentator
 from sqlalchemy.exc import IntegrityError
 
 from mybudget.api import (
@@ -15,11 +16,16 @@ from mybudget.api import (
     auth,
     budget,
     categories,
+    health,
     reconciliation,
     targets,
     transactions,
 )
 from mybudget.config import settings
+from mybudget.lib.logging import configure_logging
+
+# Configure structured logging
+configure_logging(json_logs=not settings.DEBUG, log_level="DEBUG" if settings.DEBUG else "INFO")
 
 # Create FastAPI app
 app = FastAPI(
@@ -29,6 +35,18 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
 )
+
+# Setup Prometheus metrics instrumentation
+instrumentator = Instrumentator(
+    should_group_status_codes=True,
+    should_ignore_untemplated=True,
+    should_respect_env_var=True,
+    should_instrument_requests_inprogress=True,
+    excluded_handlers=["/health", "/health/", "/metrics"],
+    inprogress_name="mybudget_inprogress",
+    inprogress_labels=True,
+)
+instrumentator.instrument(app).expose(app, endpoint="/metrics", include_in_schema=True)
 
 # Configure CORS
 app.add_middleware(
@@ -106,12 +124,8 @@ async def general_exception_handler(_request: Request, exc: Exception) -> JSONRe
         )
 
 
-# Health check endpoint
-@app.get("/health", tags=["Health"])
-async def health_check() -> dict[str, str]:
-    """Health check endpoint."""
-    return {"status": "healthy"}
-
+# Include health router (no prefix, top-level)
+app.include_router(health.router, tags=["Health"])
 
 app.include_router(auth.router, prefix=settings.API_V1_PREFIX, tags=["Auth"])
 app.include_router(
