@@ -137,11 +137,13 @@ test.describe('Month Rollover E2E', () => {
       // Navigate to budget page
       await page.goto('/budget')
 
-      // Should show underfunded
-      await expect(page.getByText(/underfunded/i)).toBeVisible()
+      // Should show underfunded and button should be enabled
+      await expect(page.getByText('Underfunded:')).toBeVisible()
+      const fundButton = page.getByRole('button', { name: /fund underfunded/i })
+      await expect(fundButton).toBeEnabled({ timeout: 10000 })
 
       // Fund the target
-      await page.getByRole('button', { name: /fund underfunded/i }).click()
+      await fundButton.click()
 
       // Wait for funding
       await expect(page.getByRole('button', { name: /funding\.\.\./i })).not.toBeVisible({
@@ -158,7 +160,7 @@ test.describe('Month Rollover E2E', () => {
       await page.waitForTimeout(1000)
 
       // Should show underfunded again in new month
-      await expect(page.getByText(/underfunded/i)).toBeVisible()
+      await expect(page.getByText('Underfunded:')).toBeVisible()
     })
   })
 
@@ -170,11 +172,13 @@ test.describe('Month Rollover E2E', () => {
 
       await page.goto('/budget')
 
-      // Should show underfunded (500)
-      await expect(page.getByText(/underfunded/i)).toBeVisible()
+      // Should show underfunded (500) and button should be enabled
+      await expect(page.getByText('Underfunded:')).toBeVisible()
+      const fundButton = page.getByRole('button', { name: /fund underfunded/i })
+      await expect(fundButton).toBeEnabled({ timeout: 10000 })
 
-      // Fund partially (200)
-      await page.getByRole('button', { name: /fund underfunded/i }).click()
+      // Fund partially
+      await fundButton.click()
       await expect(page.getByRole('button', { name: /funding\.\.\./i })).not.toBeVisible({
         timeout: 10000,
       })
@@ -185,7 +189,7 @@ test.describe('Month Rollover E2E', () => {
 
       // Should still show underfunded (balance didn't change)
       // The $200 we funded is still in available, but target is still $500
-      await expect(page.getByText(/underfunded/i)).toBeVisible()
+      await expect(page.getByText('Underfunded:')).toBeVisible()
     })
   })
 
@@ -210,11 +214,13 @@ test.describe('Month Rollover E2E', () => {
 
       await page.goto('/budget')
 
-      // Should show underfunded (400/4 = 100)
-      await expect(page.getByText(/underfunded/i)).toBeVisible()
+      // Should show underfunded (400/4 = 100) and button should be enabled
+      await expect(page.getByText('Underfunded:')).toBeVisible()
+      const fundButton = page.getByRole('button', { name: /fund underfunded/i })
+      await expect(fundButton).toBeEnabled({ timeout: 10000 })
 
       // Fund for this month
-      await page.getByRole('button', { name: /fund underfunded/i }).click()
+      await fundButton.click()
       await expect(page.getByRole('button', { name: /funding\.\.\./i })).not.toBeVisible({
         timeout: 10000,
       })
@@ -224,7 +230,7 @@ test.describe('Month Rollover E2E', () => {
       await page.waitForTimeout(1000)
 
       // Should show underfunded for next month
-      await expect(page.getByText(/underfunded/i)).toBeVisible()
+      await expect(page.getByText('Underfunded:')).toBeVisible()
     })
   })
 
@@ -271,8 +277,10 @@ test.describe('Month Rollover E2E', () => {
 
       await page.goto('/budget')
 
-      // Fund in current month
-      await page.getByRole('button', { name: /fund underfunded/i }).click()
+      // Fund in current month - wait for button to be enabled first
+      const fundButton = page.getByRole('button', { name: /fund underfunded/i })
+      await expect(fundButton).toBeEnabled({ timeout: 10000 })
+      await fundButton.click()
       await expect(page.getByRole('button', { name: /funding\.\.\./i })).not.toBeVisible({
         timeout: 10000,
       })
@@ -327,11 +335,13 @@ test.describe('Month Rollover E2E', () => {
       await expect(page.getByText('Balance Goal')).toBeVisible()
       await expect(page.getByText('Trip')).toBeVisible()
 
-      // Should show underfunded
-      await expect(page.getByText(/underfunded/i)).toBeVisible()
+      // Should show underfunded and button should be enabled
+      await expect(page.getByText('Underfunded:')).toBeVisible()
+      const fundButton = page.getByRole('button', { name: /fund underfunded/i })
+      await expect(fundButton).toBeEnabled({ timeout: 10000 })
 
       // Fund all
-      await page.getByRole('button', { name: /fund underfunded/i }).click()
+      await fundButton.click()
       await expect(page.getByRole('button', { name: /funding\.\.\./i })).not.toBeVisible({
         timeout: 10000,
       })
@@ -342,7 +352,7 @@ test.describe('Month Rollover E2E', () => {
 
       // Monthly Needed should be underfunded again
       // Balance and Date targets should reflect carried-over amounts
-      await expect(page.getByText(/underfunded/i)).toBeVisible()
+      await expect(page.getByText('Underfunded:')).toBeVisible()
     })
   })
 })

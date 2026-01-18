@@ -80,11 +80,11 @@ async function setupTestData(page: Page): Promise<{
     },
   })
 
-  // Create a target for the category (monthly savings target of $200)
+  // Create a target for the category (monthly needed target of $200)
   const targetRes = await page.request.post('/api/targets', {
     data: {
       category_id: category.id,
-      target_type: 'MONTHLY_SAVINGS',
+      target_type: 'MONTHLY_NEEDED',
       amount: '200.00',
     },
   })
@@ -111,7 +111,7 @@ test.describe('Funding Workflow', () => {
       await expect(page.getByText(/to assign/i)).toBeVisible()
 
       // Should show underfunded section
-      await expect(page.getByText(/underfunded/i)).toBeVisible()
+      await expect(page.getByText('Underfunded:')).toBeVisible()
 
       // Should show the Fund Underfunded button
       await expect(page.getByRole('button', { name: /fund underfunded/i })).toBeVisible()
@@ -150,8 +150,10 @@ test.describe('Funding Workflow', () => {
       // Get initial To Assign amount
       const toAssignBefore = await page.getByText(/\$[\d,]+\.\d{2}/).first().textContent()
 
-      // Click Fund Underfunded button
-      await page.getByRole('button', { name: /fund underfunded/i }).click()
+      // Wait for button to be enabled and click Fund Underfunded button
+      const fundButton = page.getByRole('button', { name: /fund underfunded/i })
+      await expect(fundButton).toBeEnabled({ timeout: 10000 })
+      await fundButton.click()
 
       // Wait for funding to complete - button should change or underfunded section should disappear
       await expect(page.getByRole('button', { name: /funding\.\.\./i })).not.toBeVisible({ timeout: 10000 })
@@ -170,11 +172,13 @@ test.describe('Funding Workflow', () => {
       // Navigate to budget page
       await page.goto('/budget')
 
-      // Wait for budget data to load
-      await expect(page.getByRole('button', { name: /fund underfunded/i })).toBeVisible()
+      // Wait for budget data to load and button to be enabled
+      const fundButton = page.getByRole('button', { name: /fund underfunded/i })
+      await expect(fundButton).toBeVisible()
+      await expect(fundButton).toBeEnabled({ timeout: 10000 })
 
       // Click Fund Underfunded button
-      await page.getByRole('button', { name: /fund underfunded/i }).click()
+      await fundButton.click()
 
       // Should show success toast
       await expect(page.getByText(/funded.*\$/i)).toBeVisible({ timeout: 10000 })
@@ -204,7 +208,7 @@ test.describe('Funding Workflow', () => {
       await page.request.post('/api/targets', {
         data: {
           category_id: category.id,
-          target_type: 'MONTHLY_SAVINGS',
+          target_type: 'MONTHLY_NEEDED',
           amount: '200.00',
         },
       })
@@ -293,14 +297,16 @@ test.describe('Funding Workflow', () => {
       // Navigate to budget page
       await page.goto('/budget')
 
-      // Wait for budget data to load
-      await expect(page.getByRole('button', { name: /fund underfunded/i })).toBeVisible()
+      // Wait for budget data to load and button to be enabled
+      const fundButton = page.getByRole('button', { name: /fund underfunded/i })
+      await expect(fundButton).toBeVisible()
+      await expect(fundButton).toBeEnabled({ timeout: 10000 })
 
       // Get the category row
       await expect(page.getByText('Electricity')).toBeVisible()
 
       // Click Fund Underfunded
-      await page.getByRole('button', { name: /fund underfunded/i }).click()
+      await fundButton.click()
 
       // Wait for funding to complete
       await expect(page.getByRole('button', { name: /funding\.\.\./i })).not.toBeVisible({ timeout: 10000 })
@@ -324,9 +330,11 @@ test.describe('Funding Workflow', () => {
       // Navigate to budget page
       await page.goto('/budget')
 
-      // Wait for and click Fund Underfunded
-      await expect(page.getByRole('button', { name: /fund underfunded/i })).toBeVisible()
-      await page.getByRole('button', { name: /fund underfunded/i }).click()
+      // Wait for button to be visible and enabled, then click
+      const fundButton = page.getByRole('button', { name: /fund underfunded/i })
+      await expect(fundButton).toBeVisible()
+      await expect(fundButton).toBeEnabled({ timeout: 10000 })
+      await fundButton.click()
 
       // Wait for funding to complete
       await expect(page.getByRole('button', { name: /funding\.\.\./i })).not.toBeVisible({ timeout: 10000 })
@@ -383,7 +391,7 @@ test.describe('Funding Workflow', () => {
       await page.request.post('/api/targets', {
         data: {
           category_id: category.id,
-          target_type: 'MONTHLY_SAVINGS',
+          target_type: 'MONTHLY_NEEDED',
           amount: '200.00',
         },
       })
@@ -394,11 +402,13 @@ test.describe('Funding Workflow', () => {
       // Wait for page to load
       await expect(page.getByText('Rent')).toBeVisible()
 
-      // Should show underfunded ($200 target, $0 funded)
-      await expect(page.getByText(/underfunded/i)).toBeVisible()
+      // Should show underfunded ($200 target, $0 funded) and button should be enabled
+      await expect(page.getByText('Underfunded:')).toBeVisible()
+      const fundButton = page.getByRole('button', { name: /fund underfunded/i })
+      await expect(fundButton).toBeEnabled({ timeout: 10000 })
 
       // Click Fund Underfunded
-      await page.getByRole('button', { name: /fund underfunded/i }).click()
+      await fundButton.click()
 
       // Wait for funding
       await expect(page.getByRole('button', { name: /funding\.\.\./i })).not.toBeVisible({ timeout: 10000 })
@@ -444,7 +454,7 @@ test.describe('Funding Workflow', () => {
       })
       const cat1 = await cat1Res.json()
       await page.request.post('/api/targets', {
-        data: { category_id: cat1.id, target_type: 'MONTHLY_SAVINGS', amount: '300.00' },
+        data: { category_id: cat1.id, target_type: 'MONTHLY_NEEDED', amount: '300.00' },
       })
 
       // Category 2: Utilities $100
@@ -453,7 +463,7 @@ test.describe('Funding Workflow', () => {
       })
       const cat2 = await cat2Res.json()
       await page.request.post('/api/targets', {
-        data: { category_id: cat2.id, target_type: 'MONTHLY_SAVINGS', amount: '100.00' },
+        data: { category_id: cat2.id, target_type: 'MONTHLY_NEEDED', amount: '100.00' },
       })
 
       // Navigate to budget page
@@ -463,8 +473,10 @@ test.describe('Funding Workflow', () => {
       await expect(page.getByText('Rent')).toBeVisible()
       await expect(page.getByText('Utilities')).toBeVisible()
 
-      // Click Fund Underfunded
-      await page.getByRole('button', { name: /fund underfunded/i }).click()
+      // Wait for button to be enabled and click Fund Underfunded
+      const fundButton = page.getByRole('button', { name: /fund underfunded/i })
+      await expect(fundButton).toBeEnabled({ timeout: 10000 })
+      await fundButton.click()
 
       // Wait for funding
       await expect(page.getByRole('button', { name: /funding\.\.\./i })).not.toBeVisible({ timeout: 10000 })
