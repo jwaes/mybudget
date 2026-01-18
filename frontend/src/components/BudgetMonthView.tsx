@@ -337,7 +337,7 @@ export function BudgetMonthView({ initialMonth }: BudgetMonthViewProps) {
         <div className="flex flex-col items-end gap-3">
           <div className="flex flex-col items-end">
             <span className="text-sm text-muted-foreground mb-1">To Assign:</span>
-            <span className={cn('text-2xl font-semibold tabular-nums', getToAssignClass(budgetData.to_assign))}>
+            <span className={cn('text-2xl font-semibold tabular-nums to-assign-amount', getToAssignClass(budgetData.to_assign))}>
               ${formatAmount(budgetData.to_assign)}
             </span>
           </div>

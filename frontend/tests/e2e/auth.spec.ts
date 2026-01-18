@@ -190,8 +190,8 @@ test.describe('Authentication', () => {
       // Wait for redirect to dashboard
       await expect(page).toHaveURL(/\/$|\/dashboard/)
 
-      // Find and click user menu to open dropdown (the user email prefix is shown in the button)
-      await page.locator('[data-sidebar="menu-button"]').click()
+      // Find and click user menu to open dropdown (in the sidebar footer)
+      await page.locator('[data-sidebar="footer"] [data-sidebar="menu-button"]').click()
 
       // Click the logout menu item
       await page.getByRole('menuitem', { name: /log out/i }).click()

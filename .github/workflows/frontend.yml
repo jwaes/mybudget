@@ -121,8 +121,6 @@ jobs:
 
       - name: Run E2E tests
         working-directory: frontend
-        # TODO: E2E tests need updates for shadcn/ui migration - make non-blocking for now
-        continue-on-error: true
         run: npx playwright test
 
       - name: Upload Playwright report

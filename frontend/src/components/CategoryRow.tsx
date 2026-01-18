@@ -166,7 +166,7 @@ export function CategoryRow({
   }
 
   return (
-    <div className="flex justify-between items-center py-3 px-4 bg-background border-b last:border-b-0">
+    <div className="category-row flex justify-between items-center py-3 px-4 bg-background border-b last:border-b-0">
       <div className="flex items-center gap-3">
         <button
           className="font-normal text-foreground bg-transparent border-0 cursor-pointer py-1 px-2 -my-1 -mx-2 rounded transition-colors hover:bg-muted"
@@ -213,7 +213,8 @@ export function CategoryRow({
       </div>
       <div className="flex gap-8 text-right">
         <span
-          className="min-w-[100px] text-right tabular-nums cursor-pointer py-1 px-2 -my-1 -mx-2 rounded hover:bg-muted"
+          className="funded-cell min-w-[100px] text-right tabular-nums cursor-pointer py-1 px-2 -my-1 -mx-2 rounded hover:bg-muted"
+          data-column="funded"
           onClick={handleStartEdit}
         >
           {isEditing ? (
@@ -226,15 +227,16 @@ export function CategoryRow({
               onBlur={handleSubmit}
               disabled={isSubmitting}
               className="w-[100px] text-right tabular-nums h-7 px-2"
+              name="funded"
             />
           ) : (
             formatAmount(category.funded_this_month)
           )}
         </span>
-        <span className="min-w-[100px] text-right tabular-nums text-muted-foreground">
+        <span className="min-w-[100px] text-right tabular-nums text-muted-foreground" data-column="activity">
           {formatAmount(category.activity)}
         </span>
-        <span className={cn('min-w-[100px] text-right tabular-nums', getAvailableClass(category.available))}>
+        <span className={cn('available min-w-[100px] text-right tabular-nums', getAvailableClass(category.available))} data-column="available">
           {formatAmount(category.available)}
         </span>
       </div>
