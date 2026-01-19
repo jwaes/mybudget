@@ -36,6 +36,11 @@ dependencies = [
     # Observability
     "structlog>=24.1.0",
     "prometheus-fastapi-instrumentator>=7.0.0",
+    # CSV import
+    "pandas>=2.2.0",
+    # Bank Feed Integration
+    "httpx>=0.26.0",
+    "cryptography>=42.0.0",
 ]
 
 [project.optional-dependencies]

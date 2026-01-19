@@ -55,6 +55,26 @@ class Settings(BaseSettings):
     # API Configuration
     API_V1_PREFIX: str = Field(default="/api", description="API v1 route prefix")
 
+    # GoCardless Bank Account Data API
+    GOCARDLESS_SECRET_ID: str | None = Field(
+        default=None,
+        description="GoCardless Bank Account Data API secret ID",
+    )
+    GOCARDLESS_SECRET_KEY: str | None = Field(
+        default=None,
+        description="GoCardless Bank Account Data API secret key",
+    )
+    GOCARDLESS_BASE_URL: str = Field(
+        default="https://bankaccountdata.gocardless.com/api/v2",
+        description="GoCardless Bank Account Data API base URL",
+    )
+
+    # Bank Token Encryption
+    BANK_TOKEN_ENCRYPTION_KEY: str | None = Field(
+        default=None,
+        description="Fernet key for encrypting bank tokens (generate with: python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')",
+    )
+
 
 # Global settings instance
 settings = Settings()

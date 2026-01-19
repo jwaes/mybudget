@@ -17,6 +17,7 @@ from mybudget.api import (
     budget,
     categories,
     categorization_rules,
+    csv_import,
     health,
     reconciliation,
     targets,
@@ -157,4 +158,9 @@ app.include_router(
     categorization_rules.router,
     prefix=f"{settings.API_V1_PREFIX}/rules",
     tags=["Rules"],
+)
+app.include_router(
+    csv_import.router,
+    prefix=f"{settings.API_V1_PREFIX}/import/csv",
+    tags=["CSV Import"],
 )
