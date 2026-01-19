@@ -56,21 +56,21 @@
 
 ### GoCardless Adapter
 
-- [ ] T015 Install nordigen-bank-ui or gocardless-bankaccountdata dependency
-- [ ] T016 Create GoCardlessAdapter in backend/src/mybudget/adapters/gocardless_adapter.py
-- [ ] T017 Implement get_institutions() method (search banks by country/name)
-- [ ] T018 Implement create_requisition() method (initiate OAuth flow)
-- [ ] T019 Implement get_accounts() method (fetch linked accounts)
-- [ ] T020 Implement get_transactions() method (fetch transactions for account)
-- [ ] T021 Implement refresh_access() method (handle token refresh)
-- [ ] T022 Implement revoke_access() method (disconnect and revoke)
-- [ ] T023 Add configuration for GoCardless credentials in backend/src/mybudget/config.py
-- [ ] T024 Test: Write unit tests with mocked HTTP in backend/tests/unit/test_adapters/test_gocardless_adapter.py
+- [x] T015 Install httpx and cryptography dependencies
+- [x] T016 Create GoCardlessAdapter in backend/src/mybudget/adapters/gocardless_adapter.py
+- [x] T017 Implement get_institutions() method (search banks by country/name)
+- [x] T018 Implement create_requisition() method (initiate OAuth flow)
+- [x] T019 Implement get_accounts() method (fetch linked accounts)
+- [x] T020 Implement get_transactions() method (fetch transactions for account)
+- [x] T021 Implement refresh_access() method (handle token refresh)
+- [x] T022 Implement revoke_access() method (disconnect and revoke)
+- [x] T023 Add configuration for GoCardless credentials in backend/src/mybudget/config.py
+- [x] T024 Test: Write unit tests with mocked HTTP in backend/tests/unit/test_adapters/test_gocardless_adapter.py (28 tests)
 
 ### Token Encryption
 
-- [ ] T025 Create token encryption utility in backend/src/mybudget/lib/encryption.py (encrypt_token, decrypt_token using Fernet)
-- [ ] T026 Test: Write unit tests for encryption in backend/tests/unit/test_lib/test_encryption.py
+- [x] T025 Create token encryption utility in backend/src/mybudget/lib/encryption.py (encrypt_token, decrypt_token using Fernet)
+- [x] T026 Test: Write unit tests for encryption in backend/tests/unit/test_lib/test_encryption.py (18 tests)
 
 **Checkpoint**: GoCardless adapter ready for OAuth flow
 
@@ -181,24 +181,24 @@
 
 ### CSV Parser
 
-- [ ] T073 Install pandas dependency (if not present)
-- [ ] T074 Create CSVImportService in backend/src/mybudget/services/csv_import_service.py
-- [ ] T075 [US6] Implement parse_csv() - reads file and detects format
-- [ ] T076 [US6] Implement preview_import() - returns parsed rows with suggested mapping
-- [ ] T077 [US6] Implement execute_import() - creates transactions from CSV
-- [ ] T078 [US6] Implement detect_duplicates() - checks against existing transactions
-- [ ] T079 [US6] Implement save_mapping() - stores column mapping template
-- [ ] T080 Test: Write unit tests in backend/tests/unit/test_services/test_csv_import_service.py
+- [x] T073 Install pandas dependency
+- [x] T074 Create CSVImportService in backend/src/mybudget/services/csv_import_service.py
+- [x] T075 [US6] Implement parse_csv() - reads file with multiple date/decimal format support
+- [x] T076 [US6] Implement preview_import() - returns preview with duplicate detection
+- [x] T077 [US6] Implement execute_import() - creates INBOX transactions from CSV
+- [x] T078 [US6] Implement detect_duplicates() - checks date+amount+payee against existing
+- [ ] T079 [US6] Implement save_mapping() - stores column mapping template (deferred)
+- [x] T080 Test: Write unit tests in backend/tests/unit/test_services/test_csv_import_service.py (18 tests)
 
 ### CSV API Endpoints
 
-- [ ] T081 Create CSV import router in backend/src/mybudget/api/csv_import.py
-- [ ] T082 [US6] POST /api/v1/import/csv/preview endpoint
-- [ ] T083 [US6] POST /api/v1/import/csv endpoint
-- [ ] T084 [US6] GET /api/v1/import/mappings endpoint
-- [ ] T085 [US6] POST /api/v1/import/mappings endpoint
-- [ ] T086 Register router in main.py
-- [ ] T087 Test: Write contract tests in backend/tests/contract/test_csv_import_api.py
+- [x] T081 Create CSV import router in backend/src/mybudget/api/csv_import.py
+- [x] T082 [US6] POST /api/import/csv/preview endpoint
+- [x] T083 [US6] POST /api/import/csv endpoint
+- [ ] T084 [US6] GET /api/import/mappings endpoint (deferred with T079)
+- [ ] T085 [US6] POST /api/import/mappings endpoint (deferred with T079)
+- [x] T086 Register router in main.py
+- [x] T087 Test: Write contract tests in backend/tests/contract/test_csv_import_api.py (29 tests)
 
 **Checkpoint**: CSV import functional
 
