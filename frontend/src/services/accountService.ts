@@ -64,6 +64,16 @@ export const accountService = {
   async delete(id: string): Promise<void> {
     return api.delete(`/accounts/${id}`)
   },
+
+  /**
+   * Retry sync for an account.
+   *
+   * @param id - Account ID
+   * @returns The updated account with new sync status
+   */
+  async retrySync(id: string): Promise<Account> {
+    return api.post<Account>(`/accounts/${id}/retry-sync`)
+  },
 }
 
 export default accountService

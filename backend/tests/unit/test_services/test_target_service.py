@@ -517,3 +517,836 @@ class TestSuggestedMonthlyForNonDateTargets:
             current_month=date(2026, 1, 1),
         )
         assert result is None
+
+
+# =============================================================================
+# TargetService unit tests - testing service methods with mocked database
+# =============================================================================
+
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+
+from mybudget.models.category import Category
+from mybudget.schemas.target import CategoryTargetCreate, CategoryTargetUpdate
+from mybudget.services.target_service import TargetService
+
+
+class TestTargetServiceInit:
+    """Tests for TargetService initialization."""
+
+    def test_init_with_db_session(self) -> None:
+        """Test TargetService can be initialized with db session."""
+        mock_db = MagicMock()
+        service = TargetService(mock_db)
+        assert service.db == mock_db
+        assert service.budget_service is not None
+
+
+class TestCreateTarget:
+    """Tests for create_target method."""
+
+    @pytest.mark.asyncio
+    async def test_create_target_monthly_needed_success(self) -> None:
+        """Test creating a MONTHLY_NEEDED target successfully."""
+        mock_db = AsyncMock()
+        service = TargetService(mock_db)
+
+        user_id = uuid4()
+        category_id = uuid4()
+        data = CategoryTargetCreate(
+            category_id=category_id,
+            target_type=TargetType.MONTHLY_NEEDED,
+            amount=Decimal("200.00"),
+            target_date=None,
+        )
+
+        mock_category = Category(
+            id=category_id,
+            user_id=user_id,
+            name="Test Category",
+        )
+
+        # Mock _get_category to return the category
+        with patch.object(service, "_get_category", new_callable=AsyncMock) as mock_get_cat:
+            mock_get_cat.return_value = mock_category
+
+            # Mock get_target_by_category to return None (no existing target)
+            with patch.object(
+                service, "get_target_by_category", new_callable=AsyncMock
+            ) as mock_get_target:
+                mock_get_target.return_value = None
+
+                mock_db.add = MagicMock()
+                mock_db.commit = AsyncMock()
+                mock_db.refresh = AsyncMock()
+
+                result = await service.create_target(user_id, data)
+
+                assert result is not None
+                mock_db.add.assert_called_once()
+                added_target = mock_db.add.call_args[0][0]
+                assert isinstance(added_target, CategoryTarget)
+                assert added_target.user_id == user_id
+                assert added_target.category_id == category_id
+                assert added_target.target_type == TargetType.MONTHLY_NEEDED
+                assert added_target.amount == Decimal("200.00")
+                mock_db.commit.assert_awaited_once()
+                mock_db.refresh.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_create_target_by_date_success(self) -> None:
+        """Test creating a TARGET_BY_DATE target successfully."""
+        mock_db = AsyncMock()
+        service = TargetService(mock_db)
+
+        user_id = uuid4()
+        category_id = uuid4()
+        target_date = date(2026, 12, 1)
+        data = CategoryTargetCreate(
+            category_id=category_id,
+            target_type=TargetType.TARGET_BY_DATE,
+            amount=Decimal("1200.00"),
+            target_date=target_date,
+        )
+
+        mock_category = Category(id=category_id, user_id=user_id, name="Vacation Fund")
+
+        with patch.object(service, "_get_category", new_callable=AsyncMock) as mock_get_cat:
+            mock_get_cat.return_value = mock_category
+            with patch.object(
+                service, "get_target_by_category", new_callable=AsyncMock
+            ) as mock_get_target:
+                mock_get_target.return_value = None
+
+                mock_db.add = MagicMock()
+                mock_db.commit = AsyncMock()
+                mock_db.refresh = AsyncMock()
+
+                result = await service.create_target(user_id, data)
+
+                assert result is not None
+                added_target = mock_db.add.call_args[0][0]
+                assert added_target.target_type == TargetType.TARGET_BY_DATE
+                assert added_target.target_date == target_date
+                assert added_target.amount == Decimal("1200.00")
+
+    @pytest.mark.asyncio
+    async def test_create_target_category_not_found(self) -> None:
+        """Test creating a target returns None when category doesn't exist."""
+        mock_db = AsyncMock()
+        service = TargetService(mock_db)
+
+        user_id = uuid4()
+        category_id = uuid4()
+        data = CategoryTargetCreate(
+            category_id=category_id,
+            target_type=TargetType.MONTHLY_NEEDED,
+            amount=Decimal("200.00"),
+            target_date=None,
+        )
+
+        with patch.object(service, "_get_category", new_callable=AsyncMock) as mock_get_cat:
+            mock_get_cat.return_value = None
+
+            result = await service.create_target(user_id, data)
+
+            assert result is None
+            mock_get_cat.assert_awaited_once_with(user_id, category_id)
+
+    @pytest.mark.asyncio
+    async def test_create_target_already_exists_raises_error(self) -> None:
+        """Test creating a target raises ValueError when category already has target."""
+        mock_db = AsyncMock()
+        service = TargetService(mock_db)
+
+        user_id = uuid4()
+        category_id = uuid4()
+        data = CategoryTargetCreate(
+            category_id=category_id,
+            target_type=TargetType.MONTHLY_NEEDED,
+            amount=Decimal("200.00"),
+            target_date=None,
+        )
+
+        mock_category = Category(id=category_id, user_id=user_id, name="Test Category")
+        existing_target = CategoryTarget(
+            id=uuid4(),
+            user_id=user_id,
+            category_id=category_id,
+            target_type=TargetType.TARGET_BALANCE,
+            amount=Decimal("500.00"),
+        )
+
+        with patch.object(service, "_get_category", new_callable=AsyncMock) as mock_get_cat:
+            mock_get_cat.return_value = mock_category
+            with patch.object(
+                service, "get_target_by_category", new_callable=AsyncMock
+            ) as mock_get_target:
+                mock_get_target.return_value = existing_target
+
+                with pytest.raises(ValueError, match="Category already has a target"):
+                    await service.create_target(user_id, data)
+
+
+class TestGetTarget:
+    """Tests for get_target method."""
+
+    @pytest.mark.asyncio
+    async def test_get_target_found(self) -> None:
+        """Test getting a target that exists and belongs to user."""
+        mock_db = AsyncMock()
+        service = TargetService(mock_db)
+
+        user_id = uuid4()
+        target_id = uuid4()
+
+        mock_target = CategoryTarget(
+            id=target_id,
+            user_id=user_id,
+            category_id=uuid4(),
+            target_type=TargetType.MONTHLY_NEEDED,
+            amount=Decimal("200.00"),
+        )
+
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = mock_target
+        mock_db.execute.return_value = mock_result
+
+        result = await service.get_target(user_id, target_id)
+
+        assert result == mock_target
+        mock_db.execute.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_get_target_not_found(self) -> None:
+        """Test getting a target that doesn't exist."""
+        mock_db = AsyncMock()
+        service = TargetService(mock_db)
+
+        user_id = uuid4()
+        target_id = uuid4()
+
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = None
+        mock_db.execute.return_value = mock_result
+
+        result = await service.get_target(user_id, target_id)
+
+        assert result is None
+
+    @pytest.mark.asyncio
+    async def test_get_target_wrong_user(self) -> None:
+        """Test that getting a target with wrong user_id returns None."""
+        mock_db = AsyncMock()
+        service = TargetService(mock_db)
+
+        user_id = uuid4()
+        other_user_id = uuid4()
+        target_id = uuid4()
+
+        # Query returns None because user_id doesn't match
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = None
+        mock_db.execute.return_value = mock_result
+
+        result = await service.get_target(other_user_id, target_id)
+
+        assert result is None
+
+
+class TestGetTargetByCategory:
+    """Tests for get_target_by_category method."""
+
+    @pytest.mark.asyncio
+    async def test_get_target_by_category_found(self) -> None:
+        """Test getting a target by category ID."""
+        mock_db = AsyncMock()
+        service = TargetService(mock_db)
+
+        user_id = uuid4()
+        category_id = uuid4()
+
+        mock_target = CategoryTarget(
+            id=uuid4(),
+            user_id=user_id,
+            category_id=category_id,
+            target_type=TargetType.TARGET_BALANCE,
+            amount=Decimal("1000.00"),
+        )
+
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = mock_target
+        mock_db.execute.return_value = mock_result
+
+        result = await service.get_target_by_category(user_id, category_id)
+
+        assert result == mock_target
+
+    @pytest.mark.asyncio
+    async def test_get_target_by_category_not_found(self) -> None:
+        """Test getting target by category returns None when not found."""
+        mock_db = AsyncMock()
+        service = TargetService(mock_db)
+
+        user_id = uuid4()
+        category_id = uuid4()
+
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = None
+        mock_db.execute.return_value = mock_result
+
+        result = await service.get_target_by_category(user_id, category_id)
+
+        assert result is None
+
+
+class TestListTargets:
+    """Tests for list_targets method."""
+
+    @pytest.mark.asyncio
+    async def test_list_targets_with_targets(self) -> None:
+        """Test listing targets for a user with multiple targets."""
+        mock_db = AsyncMock()
+        service = TargetService(mock_db)
+
+        user_id = uuid4()
+
+        mock_targets = [
+            CategoryTarget(
+                id=uuid4(),
+                user_id=user_id,
+                category_id=uuid4(),
+                target_type=TargetType.MONTHLY_NEEDED,
+                amount=Decimal("100.00"),
+            ),
+            CategoryTarget(
+                id=uuid4(),
+                user_id=user_id,
+                category_id=uuid4(),
+                target_type=TargetType.TARGET_BALANCE,
+                amount=Decimal("500.00"),
+            ),
+        ]
+
+        mock_result = MagicMock()
+        mock_scalars = MagicMock()
+        mock_scalars.all.return_value = mock_targets
+        mock_result.scalars.return_value = mock_scalars
+        mock_db.execute.return_value = mock_result
+
+        result = await service.list_targets(user_id)
+
+        assert len(result) == 2
+        assert result == mock_targets
+
+    @pytest.mark.asyncio
+    async def test_list_targets_empty(self) -> None:
+        """Test listing targets for a user with no targets."""
+        mock_db = AsyncMock()
+        service = TargetService(mock_db)
+
+        user_id = uuid4()
+
+        mock_result = MagicMock()
+        mock_scalars = MagicMock()
+        mock_scalars.all.return_value = []
+        mock_result.scalars.return_value = mock_scalars
+        mock_db.execute.return_value = mock_result
+
+        result = await service.list_targets(user_id)
+
+        assert result == []
+
+
+class TestUpdateTarget:
+    """Tests for update_target method."""
+
+    @pytest.mark.asyncio
+    async def test_update_target_amount_success(self) -> None:
+        """Test updating target amount successfully."""
+        mock_db = AsyncMock()
+        service = TargetService(mock_db)
+
+        user_id = uuid4()
+        target_id = uuid4()
+
+        mock_target = MagicMock()
+        mock_target.target_type = TargetType.MONTHLY_NEEDED
+        mock_target.amount = Decimal("200.00")
+        mock_target.target_date = None
+
+        data = CategoryTargetUpdate(amount=Decimal("300.00"))
+
+        with patch.object(service, "get_target", new_callable=AsyncMock) as mock_get:
+            mock_get.return_value = mock_target
+            mock_db.commit = AsyncMock()
+            mock_db.refresh = AsyncMock()
+
+            result = await service.update_target(user_id, target_id, data)
+
+            assert result is not None
+            assert mock_target.amount == Decimal("300.00")
+            mock_db.commit.assert_awaited_once()
+            mock_db.refresh.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_update_target_type_change(self) -> None:
+        """Test changing target type."""
+        mock_db = AsyncMock()
+        service = TargetService(mock_db)
+
+        user_id = uuid4()
+        target_id = uuid4()
+
+        mock_target = MagicMock()
+        mock_target.target_type = TargetType.MONTHLY_NEEDED
+        mock_target.amount = Decimal("200.00")
+        mock_target.target_date = None
+
+        data = CategoryTargetUpdate(target_type=TargetType.TARGET_BALANCE)
+
+        with patch.object(service, "get_target", new_callable=AsyncMock) as mock_get:
+            mock_get.return_value = mock_target
+            mock_db.commit = AsyncMock()
+            mock_db.refresh = AsyncMock()
+
+            result = await service.update_target(user_id, target_id, data)
+
+            assert result is not None
+            assert mock_target.target_type == TargetType.TARGET_BALANCE
+
+    @pytest.mark.asyncio
+    async def test_update_target_not_found(self) -> None:
+        """Test updating a target that doesn't exist."""
+        mock_db = AsyncMock()
+        service = TargetService(mock_db)
+
+        user_id = uuid4()
+        target_id = uuid4()
+        data = CategoryTargetUpdate(amount=Decimal("300.00"))
+
+        with patch.object(service, "get_target", new_callable=AsyncMock) as mock_get:
+            mock_get.return_value = None
+
+            result = await service.update_target(user_id, target_id, data)
+
+            assert result is None
+
+    @pytest.mark.asyncio
+    async def test_update_target_to_date_type_without_date_raises(self) -> None:
+        """Test updating to TARGET_BY_DATE without target_date raises error."""
+        mock_db = AsyncMock()
+        service = TargetService(mock_db)
+
+        user_id = uuid4()
+        target_id = uuid4()
+
+        mock_target = MagicMock()
+        mock_target.target_type = TargetType.MONTHLY_NEEDED
+        mock_target.amount = Decimal("200.00")
+        mock_target.target_date = None
+
+        data = CategoryTargetUpdate(target_type=TargetType.TARGET_BY_DATE)
+
+        with patch.object(service, "get_target", new_callable=AsyncMock) as mock_get:
+            mock_get.return_value = mock_target
+
+            with pytest.raises(ValueError, match="target_date is required"):
+                await service.update_target(user_id, target_id, data)
+
+    @pytest.mark.asyncio
+    async def test_update_target_clears_date_for_non_date_type(self) -> None:
+        """Test updating from TARGET_BY_DATE to other type clears target_date."""
+        mock_db = AsyncMock()
+        service = TargetService(mock_db)
+
+        user_id = uuid4()
+        target_id = uuid4()
+
+        mock_target = MagicMock()
+        mock_target.target_type = TargetType.TARGET_BY_DATE
+        mock_target.amount = Decimal("1200.00")
+        mock_target.target_date = date(2026, 12, 1)
+
+        data = CategoryTargetUpdate(target_type=TargetType.MONTHLY_NEEDED)
+
+        with patch.object(service, "get_target", new_callable=AsyncMock) as mock_get:
+            mock_get.return_value = mock_target
+            mock_db.commit = AsyncMock()
+            mock_db.refresh = AsyncMock()
+
+            result = await service.update_target(user_id, target_id, data)
+
+            assert result is not None
+            assert mock_target.target_type == TargetType.MONTHLY_NEEDED
+            # target_date should be cleared
+            assert mock_target.target_date is None
+
+    @pytest.mark.asyncio
+    async def test_update_target_no_changes(self) -> None:
+        """Test updating target with None values (no changes)."""
+        mock_db = AsyncMock()
+        service = TargetService(mock_db)
+
+        user_id = uuid4()
+        target_id = uuid4()
+
+        mock_target = MagicMock()
+        mock_target.target_type = TargetType.MONTHLY_NEEDED
+        mock_target.amount = Decimal("200.00")
+        mock_target.target_date = None
+
+        data = CategoryTargetUpdate()
+
+        with patch.object(service, "get_target", new_callable=AsyncMock) as mock_get:
+            mock_get.return_value = mock_target
+            mock_db.commit = AsyncMock()
+            mock_db.refresh = AsyncMock()
+
+            result = await service.update_target(user_id, target_id, data)
+
+            assert result is not None
+            # Values unchanged
+            assert mock_target.amount == Decimal("200.00")
+            assert mock_target.target_type == TargetType.MONTHLY_NEEDED
+
+    @pytest.mark.asyncio
+    async def test_update_target_date_change(self) -> None:
+        """Test updating target_date for TARGET_BY_DATE target."""
+        mock_db = AsyncMock()
+        service = TargetService(mock_db)
+
+        user_id = uuid4()
+        target_id = uuid4()
+
+        mock_target = MagicMock()
+        mock_target.target_type = TargetType.TARGET_BY_DATE
+        mock_target.amount = Decimal("1200.00")
+        mock_target.target_date = date(2026, 6, 1)
+
+        new_date = date(2026, 12, 1)
+        data = CategoryTargetUpdate(target_date=new_date)
+
+        with patch.object(service, "get_target", new_callable=AsyncMock) as mock_get:
+            mock_get.return_value = mock_target
+            mock_db.commit = AsyncMock()
+            mock_db.refresh = AsyncMock()
+
+            result = await service.update_target(user_id, target_id, data)
+
+            assert result is not None
+            assert mock_target.target_date == new_date
+
+
+class TestDeleteTarget:
+    """Tests for delete_target method."""
+
+    @pytest.mark.asyncio
+    async def test_delete_target_success(self) -> None:
+        """Test deleting a target successfully."""
+        mock_db = AsyncMock()
+        service = TargetService(mock_db)
+
+        user_id = uuid4()
+        target_id = uuid4()
+
+        mock_target = CategoryTarget(
+            id=target_id,
+            user_id=user_id,
+            category_id=uuid4(),
+            target_type=TargetType.MONTHLY_NEEDED,
+            amount=Decimal("200.00"),
+        )
+
+        with patch.object(service, "get_target", new_callable=AsyncMock) as mock_get:
+            mock_get.return_value = mock_target
+            mock_db.delete = AsyncMock()
+            mock_db.commit = AsyncMock()
+
+            result = await service.delete_target(user_id, target_id)
+
+            assert result is True
+            mock_db.delete.assert_awaited_once_with(mock_target)
+            mock_db.commit.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_delete_target_not_found(self) -> None:
+        """Test deleting a target that doesn't exist."""
+        mock_db = AsyncMock()
+        service = TargetService(mock_db)
+
+        user_id = uuid4()
+        target_id = uuid4()
+
+        with patch.object(service, "get_target", new_callable=AsyncMock) as mock_get:
+            mock_get.return_value = None
+
+            result = await service.delete_target(user_id, target_id)
+
+            assert result is False
+
+
+class TestCalculateUnderfunded:
+    """Tests for calculate_underfunded service method."""
+
+    @pytest.mark.asyncio
+    async def test_calculate_underfunded_target_not_found(self) -> None:
+        """Test calculate_underfunded returns None when target not found."""
+        mock_db = AsyncMock()
+        service = TargetService(mock_db)
+
+        user_id = uuid4()
+        target_id = uuid4()
+        month = date(2026, 1, 1)
+
+        with patch.object(service, "get_target", new_callable=AsyncMock) as mock_get:
+            mock_get.return_value = None
+
+            result = await service.calculate_underfunded(user_id, target_id, month)
+
+            assert result is None
+
+    @pytest.mark.asyncio
+    async def test_calculate_underfunded_monthly_needed(self) -> None:
+        """Test calculate_underfunded for MONTHLY_NEEDED target."""
+        mock_db = AsyncMock()
+        service = TargetService(mock_db)
+
+        user_id = uuid4()
+        target_id = uuid4()
+        category_id = uuid4()
+        month = date(2026, 1, 15)
+
+        mock_target = CategoryTarget(
+            id=target_id,
+            user_id=user_id,
+            category_id=category_id,
+            target_type=TargetType.MONTHLY_NEEDED,
+            amount=Decimal("200.00"),
+            target_date=None,
+        )
+
+        with patch.object(service, "get_target", new_callable=AsyncMock) as mock_get:
+            mock_get.return_value = mock_target
+
+            # Mock budget service methods
+            with patch.object(
+                service.budget_service, "get_funded_this_month", new_callable=AsyncMock
+            ) as mock_funded:
+                mock_funded.return_value = Decimal("75.00")
+
+                with patch.object(
+                    service.budget_service, "get_available", new_callable=AsyncMock
+                ) as mock_available:
+                    mock_available.return_value = Decimal("100.00")
+
+                    result = await service.calculate_underfunded(
+                        user_id, target_id, month
+                    )
+
+                    assert result is not None
+                    assert result["target_id"] == target_id
+                    assert result["category_id"] == category_id
+                    assert result["month"] == date(2026, 1, 1)  # First day
+                    assert result["target_type"] == TargetType.MONTHLY_NEEDED
+                    assert result["target_amount"] == "200.00"
+                    assert result["funded_this_month"] == "75.00"
+                    assert result["available_now"] == "100.00"
+                    assert result["underfunded"] == "125.00"  # 200 - 75
+                    assert result["status"] == "UNDERFUNDED"
+
+    @pytest.mark.asyncio
+    async def test_calculate_underfunded_funded_status(self) -> None:
+        """Test calculate_underfunded returns FUNDED status when target met."""
+        mock_db = AsyncMock()
+        service = TargetService(mock_db)
+
+        user_id = uuid4()
+        target_id = uuid4()
+        category_id = uuid4()
+        month = date(2026, 1, 1)
+
+        mock_target = CategoryTarget(
+            id=target_id,
+            user_id=user_id,
+            category_id=category_id,
+            target_type=TargetType.MONTHLY_NEEDED,
+            amount=Decimal("200.00"),
+            target_date=None,
+        )
+
+        with patch.object(service, "get_target", new_callable=AsyncMock) as mock_get:
+            mock_get.return_value = mock_target
+            with patch.object(
+                service.budget_service, "get_funded_this_month", new_callable=AsyncMock
+            ) as mock_funded:
+                mock_funded.return_value = Decimal("200.00")
+                with patch.object(
+                    service.budget_service, "get_available", new_callable=AsyncMock
+                ) as mock_available:
+                    mock_available.return_value = Decimal("200.00")
+
+                    result = await service.calculate_underfunded(
+                        user_id, target_id, month
+                    )
+
+                    assert result["underfunded"] == "0.00"
+                    assert result["status"] == "FUNDED"
+
+    @pytest.mark.asyncio
+    async def test_calculate_underfunded_overfunded_status(self) -> None:
+        """Test calculate_underfunded returns OVERFUNDED status for MONTHLY_NEEDED."""
+        mock_db = AsyncMock()
+        service = TargetService(mock_db)
+
+        user_id = uuid4()
+        target_id = uuid4()
+        category_id = uuid4()
+        month = date(2026, 1, 1)
+
+        mock_target = CategoryTarget(
+            id=target_id,
+            user_id=user_id,
+            category_id=category_id,
+            target_type=TargetType.MONTHLY_NEEDED,
+            amount=Decimal("200.00"),
+            target_date=None,
+        )
+
+        with patch.object(service, "get_target", new_callable=AsyncMock) as mock_get:
+            mock_get.return_value = mock_target
+            with patch.object(
+                service.budget_service, "get_funded_this_month", new_callable=AsyncMock
+            ) as mock_funded:
+                mock_funded.return_value = Decimal("250.00")  # Over target
+                with patch.object(
+                    service.budget_service, "get_available", new_callable=AsyncMock
+                ) as mock_available:
+                    mock_available.return_value = Decimal("250.00")
+
+                    result = await service.calculate_underfunded(
+                        user_id, target_id, month
+                    )
+
+                    assert result["underfunded"] == "0.00"
+                    assert result["status"] == "OVERFUNDED"
+
+    @pytest.mark.asyncio
+    async def test_calculate_underfunded_target_by_date(self) -> None:
+        """Test calculate_underfunded for TARGET_BY_DATE includes extra fields."""
+        mock_db = AsyncMock()
+        service = TargetService(mock_db)
+
+        user_id = uuid4()
+        target_id = uuid4()
+        category_id = uuid4()
+        month = date(2026, 1, 1)
+
+        mock_target = CategoryTarget(
+            id=target_id,
+            user_id=user_id,
+            category_id=category_id,
+            target_type=TargetType.TARGET_BY_DATE,
+            amount=Decimal("1200.00"),
+            target_date=date(2026, 12, 1),
+        )
+
+        with patch.object(service, "get_target", new_callable=AsyncMock) as mock_get:
+            mock_get.return_value = mock_target
+            with patch.object(
+                service.budget_service, "get_funded_this_month", new_callable=AsyncMock
+            ) as mock_funded:
+                mock_funded.return_value = Decimal("0.00")
+                with patch.object(
+                    service.budget_service, "get_available", new_callable=AsyncMock
+                ) as mock_available:
+                    mock_available.return_value = Decimal("0.00")
+
+                    result = await service.calculate_underfunded(
+                        user_id, target_id, month
+                    )
+
+                    assert result["target_type"] == TargetType.TARGET_BY_DATE
+                    assert "months_left" in result
+                    assert result["months_left"] == 12
+                    assert "suggested_monthly" in result
+                    assert result["suggested_monthly"] == "100.00"
+
+
+class TestGetCategoryName:
+    """Tests for get_category_name method."""
+
+    @pytest.mark.asyncio
+    async def test_get_category_name_found(self) -> None:
+        """Test getting category name when category exists."""
+        mock_db = AsyncMock()
+        service = TargetService(mock_db)
+
+        user_id = uuid4()
+        category_id = uuid4()
+
+        mock_category = Category(id=category_id, user_id=user_id, name="Groceries")
+
+        with patch.object(service, "_get_category", new_callable=AsyncMock) as mock_get:
+            mock_get.return_value = mock_category
+
+            result = await service.get_category_name(user_id, category_id)
+
+            assert result == "Groceries"
+
+    @pytest.mark.asyncio
+    async def test_get_category_name_not_found(self) -> None:
+        """Test getting category name returns None when not found."""
+        mock_db = AsyncMock()
+        service = TargetService(mock_db)
+
+        user_id = uuid4()
+        category_id = uuid4()
+
+        with patch.object(service, "_get_category", new_callable=AsyncMock) as mock_get:
+            mock_get.return_value = None
+
+            result = await service.get_category_name(user_id, category_id)
+
+            assert result is None
+
+
+class TestGetCategoryInternal:
+    """Tests for _get_category internal method."""
+
+    @pytest.mark.asyncio
+    async def test_get_category_found(self) -> None:
+        """Test _get_category returns category when found."""
+        mock_db = AsyncMock()
+        service = TargetService(mock_db)
+
+        user_id = uuid4()
+        category_id = uuid4()
+
+        mock_category = Category(id=category_id, user_id=user_id, name="Test")
+
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = mock_category
+        mock_db.execute.return_value = mock_result
+
+        result = await service._get_category(user_id, category_id)
+
+        assert result == mock_category
+
+    @pytest.mark.asyncio
+    async def test_get_category_not_found(self) -> None:
+        """Test _get_category returns None when not found."""
+        mock_db = AsyncMock()
+        service = TargetService(mock_db)
+
+        user_id = uuid4()
+        category_id = uuid4()
+
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = None
+        mock_db.execute.return_value = mock_result
+
+        result = await service._get_category(user_id, category_id)
+
+        assert result is None

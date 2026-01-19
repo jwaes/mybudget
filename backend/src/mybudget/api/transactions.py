@@ -3,6 +3,8 @@ Transactions API endpoints.
 
 Handles transaction CRUD operations, CSV import, and approval workflow.
 """
+from datetime import date
+from decimal import Decimal
 from typing import Annotated
 from uuid import UUID
 
@@ -51,18 +53,58 @@ async def list_transactions(
     db: Annotated[AsyncSession, Depends(get_db)],
     account_id: UUID | None = None,
     state: TransactionState | None = None,
+    payee_search: str | None = Query(None, description="Search payee (partial, case-insensitive)"),
+    memo_search: str | None = Query(None, description="Search memo (partial, case-insensitive)"),
+    date_from: date | None = Query(None, description="Filter from date (inclusive)"),
+    date_to: date | None = Query(None, description="Filter to date (inclusive)"),
+    amount_min: Decimal | None = Query(None, description="Minimum amount"),
+    amount_max: Decimal | None = Query(None, description="Maximum amount"),
+    category_id: UUID | None = Query(None, description="Filter by category ID"),
+    uncategorized_only: bool = Query(False, description="Only uncategorized transactions"),
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
 ) -> TransactionListResponse:
-    """List transactions with optional filters."""
+    """List transactions with optional search and filters."""
     service = TransactionService(db)
-    transactions, total = await service.list_transactions(
-        current_user.id,
-        account_id=account_id,
-        state=state,
-        limit=limit,
-        offset=offset,
-    )
+
+    # Check if any search/filter params are provided
+    has_search_params = any([
+        payee_search,
+        memo_search,
+        date_from,
+        date_to,
+        amount_min is not None,
+        amount_max is not None,
+        category_id,
+        uncategorized_only,
+    ])
+
+    if has_search_params:
+        # Use search_transactions for advanced filtering
+        transactions, total = await service.search_transactions(
+            user_id=current_user.id,
+            account_id=account_id,
+            state=state,
+            payee_search=payee_search,
+            memo_search=memo_search,
+            date_from=date_from,
+            date_to=date_to,
+            amount_min=amount_min,
+            amount_max=amount_max,
+            category_id=category_id,
+            uncategorized_only=uncategorized_only,
+            limit=limit,
+            offset=offset,
+        )
+    else:
+        # Use simple list_transactions for basic listing
+        transactions, total = await service.list_transactions(
+            current_user.id,
+            account_id=account_id,
+            state=state,
+            limit=limit,
+            offset=offset,
+        )
 
     return TransactionListResponse(
         transactions=[TransactionResponse.model_validate(t) for t in transactions],

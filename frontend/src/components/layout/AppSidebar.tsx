@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { LayoutGrid, Wallet, ArrowLeftRight } from 'lucide-react'
 import { useLocation, Link } from 'react-router-dom'
 import {
@@ -12,7 +13,9 @@ import {
   SidebarGroup,
   SidebarGroupContent,
 } from '@/components/ui/sidebar'
+import { Badge } from '@/components/ui/badge'
 import { NavUser } from './NavUser'
+import { transactionService } from '@/services/transactionService'
 
 const navItems = [
   {
@@ -34,6 +37,24 @@ const navItems = [
 
 export function AppSidebar() {
   const location = useLocation()
+  const [uncategorizedCount, setUncategorizedCount] = useState(0)
+
+  useEffect(() => {
+    const fetchUncategorizedCount = async () => {
+      try {
+        const response = await transactionService.listInbox({ limit: 0 })
+        setUncategorizedCount(response.total)
+      } catch {
+        // Don't show badge if fetch fails
+        setUncategorizedCount(0)
+      }
+    }
+
+    fetchUncategorizedCount()
+    const interval = setInterval(fetchUncategorizedCount, 30000)
+
+    return () => clearInterval(interval)
+  }, [])
 
   const isActive = (url: string) => {
     if (url === '/budget') {
@@ -72,9 +93,16 @@ export function AppSidebar() {
                     isActive={isActive(item.url)}
                     tooltip={item.title}
                   >
-                    <Link to={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
+                    <Link to={item.url} className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-2">
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </div>
+                      {item.title === 'Transactions' && uncategorizedCount > 0 && (
+                        <Badge variant="destructive" className="ml-auto">
+                          {uncategorizedCount}
+                        </Badge>
+                      )}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

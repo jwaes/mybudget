@@ -62,3 +62,17 @@ class CategorizationRuleMatch(BaseModel):
     payee_pattern: str
     category_id: UUID
     category_name: str
+
+
+class CategorizationRuleTestRequest(BaseModel):
+    """Schema for testing rule matching against a payee."""
+
+    payee: str = Field(..., min_length=1, description="Payee string to test against rules")
+
+
+class CategorizationRuleTestResponse(BaseModel):
+    """Schema for rule test result."""
+
+    payee: str
+    matched: bool
+    rule: CategorizationRuleMatch | None = None

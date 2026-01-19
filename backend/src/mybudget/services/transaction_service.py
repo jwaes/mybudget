@@ -2,10 +2,11 @@
 Transaction service for business logic operations.
 """
 from datetime import UTC, datetime
+from datetime import date as date_type
 from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from mybudget.models.account import Account
@@ -37,6 +38,9 @@ class TransactionService:
         """
         Create a new transaction.
 
+        If no category is provided, automatically applies categorization rules
+        based on payee matching (sets categorization_source = RULE).
+
         Returns None if the specified account doesn't exist or belong to user.
         """
         # Verify account exists and belongs to user
@@ -60,6 +64,12 @@ class TransactionService:
             memo=data.memo,
             state=TransactionState.INBOX,
         )
+
+        # Apply categorization rules if no category provided
+        if transaction.category_id is None:
+            from mybudget.services.categorization_rule_service import CategorizationRuleService
+            rule_service = CategorizationRuleService(self.db)
+            await rule_service.apply_rules_to_transaction(user_id, transaction)
 
         self.db.add(transaction)
         await self.db.commit()
@@ -96,6 +106,97 @@ class TransactionService:
         if account_id is not None:
             stmt = stmt.where(Transaction.account_id == account_id)
 
+        if state is not None:
+            stmt = stmt.where(Transaction.state == state)
+
+        # Get total count
+        count_stmt = stmt
+        count_result = await self.db.execute(count_stmt)
+        total = len(list(count_result.scalars().all()))
+
+        # Add ordering and pagination
+        stmt = stmt.order_by(Transaction.date.desc(), Transaction.created_at.desc())
+        stmt = stmt.offset(offset).limit(limit)
+
+        result = await self.db.execute(stmt)
+        transactions = list(result.scalars().all())
+
+        return transactions, total
+
+    async def search_transactions(
+        self,
+        user_id: UUID,
+        payee_search: str | None = None,
+        memo_search: str | None = None,
+        date_from: date_type | None = None,
+        date_to: date_type | None = None,
+        amount_min: Decimal | None = None,
+        amount_max: Decimal | None = None,
+        category_id: UUID | None = None,
+        uncategorized_only: bool = False,
+        account_id: UUID | None = None,
+        state: TransactionState | None = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> tuple[list[Transaction], int]:
+        """
+        Search transactions with multiple filter criteria.
+
+        Args:
+            user_id: Owner user ID
+            payee_search: Partial match, case-insensitive search on payee (FR-046)
+            memo_search: Partial match, case-insensitive search on memo (FR-047)
+            date_from: Filter transactions on or after this date (FR-048)
+            date_to: Filter transactions on or before this date (FR-048)
+            amount_min: Filter transactions with amount >= this value (FR-049)
+            amount_max: Filter transactions with amount <= this value (FR-049)
+            category_id: Filter by specific category (FR-050)
+            uncategorized_only: If True, filter for NULL category_id (FR-050)
+            account_id: Filter by account (FR-051)
+            state: Filter by transaction state (FR-052)
+            limit: Maximum results to return
+            offset: Number of results to skip
+
+        Returns:
+            Tuple of (transactions, total_count).
+        """
+        stmt = select(Transaction).where(Transaction.user_id == user_id)
+
+        # FR-046: payee_search - partial match, case-insensitive
+        if payee_search is not None:
+            stmt = stmt.where(
+                func.lower(Transaction.payee).contains(func.lower(payee_search))
+            )
+
+        # FR-047: memo_search - partial match, case-insensitive
+        if memo_search is not None:
+            stmt = stmt.where(
+                func.lower(Transaction.memo).contains(func.lower(memo_search))
+            )
+
+        # FR-048: date range filter (inclusive)
+        if date_from is not None:
+            stmt = stmt.where(Transaction.date >= date_from)
+        if date_to is not None:
+            stmt = stmt.where(Transaction.date <= date_to)
+
+        # FR-049: amount range filter (inclusive)
+        if amount_min is not None:
+            stmt = stmt.where(Transaction.amount >= amount_min)
+        if amount_max is not None:
+            stmt = stmt.where(Transaction.amount <= amount_max)
+
+        # FR-050: category filter
+        if uncategorized_only:
+            stmt = stmt.where(Transaction.category_id.is_(None))
+        elif category_id is not None:
+            stmt = stmt.where(Transaction.category_id == category_id)
+
+        # FR-051: account filter
+        if account_id is not None:
+            stmt = stmt.where(Transaction.account_id == account_id)
+
+        # FR-052: state filter
         if state is not None:
             stmt = stmt.where(Transaction.state == state)
 

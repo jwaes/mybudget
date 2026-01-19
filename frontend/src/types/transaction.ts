@@ -45,3 +45,14 @@ export interface TransactionListResponse {
   transactions: Transaction[]
   total: number
 }
+
+export interface TransactionBulkApprove {
+  transaction_ids: string[]
+  category_id: string
+}
+
+export interface TransactionBulkResult {
+  success_count: number
+  failed_count: number
+  failed_ids: string[]
+}

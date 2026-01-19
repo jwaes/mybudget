@@ -16,6 +16,7 @@ from mybudget.api import (
     auth,
     budget,
     categories,
+    categorization_rules,
     health,
     reconciliation,
     targets,
@@ -151,4 +152,9 @@ app.include_router(
     reconciliation.router,
     prefix=f"{settings.API_V1_PREFIX}/reconciliations",
     tags=["Reconciliation"],
+)
+app.include_router(
+    categorization_rules.router,
+    prefix=f"{settings.API_V1_PREFIX}/rules",
+    tags=["Rules"],
 )

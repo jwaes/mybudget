@@ -8,8 +8,11 @@ import { useState, useEffect, useCallback } from 'react'
 import { TransactionInbox } from '@/components/TransactionInbox'
 import { CSVImport } from '@/components/CSVImport'
 import { AddTransactionModal } from '@/components/AddTransactionModal'
+import { TransactionSearch } from '@/components/TransactionSearch'
+import { TransactionFilters, type TransactionFiltersState } from '@/components/TransactionFilters'
 import { transactionService } from '@/services/transactionService'
 import { accountService } from '@/services/accountService'
+import { categoryService } from '@/services/categoryService'
 import type { Transaction } from '@/types/transaction'
 import type { Account } from '@/types/account'
 import { Button } from '@/components/ui/button'
@@ -43,18 +46,29 @@ export function TransactionsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [filters, setFilters] = useState<TransactionFiltersState>({})
+  const [categories, setCategories] = useState<Array<{ id: string; name: string }>>([])
 
-  // Load accounts on mount
+  // Load accounts and categories on mount
   useEffect(() => {
-    async function loadAccounts() {
+    async function loadInitialData() {
       try {
-        const accountsResponse = await accountService.list()
+        const [accountsResponse, categoriesResponse] = await Promise.all([
+          accountService.list(),
+          categoryService.list(),
+        ])
         setAccounts(accountsResponse.accounts)
+        // Flatten categories from groups for the filter dropdown
+        const flatCategories = categoriesResponse.groups.flatMap((group) =>
+          group.categories.map((cat) => ({ id: cat.id, name: cat.name }))
+        )
+        setCategories(flatCategories)
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load accounts')
+        setError(err instanceof Error ? err.message : 'Failed to load initial data')
       }
     }
-    loadAccounts()
+    loadInitialData()
   }, [])
 
   const loadData = useCallback(async () => {
@@ -66,6 +80,15 @@ export function TransactionsPage() {
       if (activeTab === 'all') {
         const response = await transactionService.list({
           account_id: selectedAccountId,
+          payee_search: searchQuery || undefined,
+          memo_search: searchQuery || undefined,
+          date_from: filters.date_from,
+          date_to: filters.date_to,
+          amount_min: filters.amount_min,
+          amount_max: filters.amount_max,
+          category_id: filters.category_id,
+          state: filters.state as 'INBOX' | 'APPROVED' | 'CLEARED' | undefined,
+          uncategorized_only: filters.uncategorized_only,
         })
         setTransactions(response.transactions)
       }
@@ -74,7 +97,7 @@ export function TransactionsPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [activeTab, selectedAccountId])
+  }, [activeTab, selectedAccountId, searchQuery, filters])
 
   useEffect(() => {
     loadData()
@@ -159,6 +182,18 @@ export function TransactionsPage() {
             </SelectContent>
           </Select>
         </div>
+      </div>
+
+      <div className="flex flex-col gap-4 mb-6">
+        <div className="flex items-center gap-4">
+          <TransactionSearch value={searchQuery} onChange={setSearchQuery} />
+        </div>
+        <TransactionFilters
+          filters={filters}
+          categories={categories}
+          onChange={setFilters}
+          onClear={() => setFilters({})}
+        />
       </div>
 
       <div className="flex gap-1 mb-6">

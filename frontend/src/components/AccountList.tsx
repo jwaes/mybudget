@@ -1,16 +1,23 @@
 /**
  * AccountList component.
  *
- * Displays a list of accounts with their balances.
+ * Displays a list of accounts with their balances and sync status.
  */
 
 import { useEffect, useState } from 'react'
+import { CheckCircle, XCircle, Clock, Minus, RefreshCw } from 'lucide-react'
 import { accountService } from '@/services/accountService'
 import { ReconcileModal } from './ReconcileModal'
 import type { Account } from '@/types/account'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import {
   Table,
   TableBody,
@@ -20,6 +27,19 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+
+function formatRelativeTime(dateString: string | null): string {
+  if (!dateString) return ''
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+  const diffMins = Math.floor(diffMs / 60000)
+  if (diffMins < 60) return `${diffMins}m ago`
+  const diffHours = Math.floor(diffMins / 60)
+  if (diffHours < 24) return `${diffHours}h ago`
+  const diffDays = Math.floor(diffHours / 24)
+  return `${diffDays}d ago`
+}
 
 interface AccountListProps {
   onAccountSelect?: (account: Account) => void
@@ -31,6 +51,7 @@ export function AccountList({ onAccountSelect, onReconcileComplete }: AccountLis
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [reconcileAccount, setReconcileAccount] = useState<Account | null>(null)
+  const [retryingAccountId, setRetryingAccountId] = useState<string | null>(null)
 
   useEffect(() => {
     loadAccounts()
@@ -59,6 +80,86 @@ export function AccountList({ onAccountSelect, onReconcileComplete }: AccountLis
 
   function getAccountTypeLabel(type: string): string {
     return type === 'CHECKING' ? 'Checking' : 'Savings'
+  }
+
+  async function handleRetrySync(accountId: string) {
+    try {
+      setRetryingAccountId(accountId)
+      await accountService.retrySync(accountId)
+      await loadAccounts()
+    } catch (err) {
+      // Error will be reflected in the account's sync_error after reload
+      await loadAccounts()
+    } finally {
+      setRetryingAccountId(null)
+    }
+  }
+
+  function renderSyncStatus(account: Account) {
+    const status = account.sync_status
+    const isRetrying = retryingAccountId === account.id
+
+    switch (status) {
+      case 'SUCCESS':
+        return (
+          <div className="flex items-center gap-1.5 text-green-600" data-testid="sync-status-success">
+            <CheckCircle className="h-4 w-4" />
+            <span>Synced</span>
+            {account.last_sync_at && (
+              <span className="text-muted-foreground text-xs">
+                {formatRelativeTime(account.last_sync_at)}
+              </span>
+            )}
+          </div>
+        )
+      case 'FAILED':
+        return (
+          <div className="flex items-center gap-2" data-testid="sync-status-failed">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-1.5 text-red-600 cursor-help">
+                    <XCircle className="h-4 w-4" />
+                    <span>Failed</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{account.sync_error || 'Unknown error'}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleRetrySync(account.id)
+              }}
+              disabled={isRetrying}
+              aria-label={`Retry sync for ${account.name}`}
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${isRetrying ? 'animate-spin' : ''}`} />
+              <span className="ml-1">Retry</span>
+            </Button>
+          </div>
+        )
+      case 'PENDING':
+        return (
+          <div className="flex items-center gap-1.5 text-yellow-600" data-testid="sync-status-pending">
+            <Clock className="h-4 w-4" />
+            <span>Pending</span>
+          </div>
+        )
+      case 'NEVER_SYNCED':
+      default:
+        return (
+          <div className="flex items-center gap-1.5 text-muted-foreground" data-testid="sync-status-never-synced">
+            <Minus className="h-4 w-4" />
+            <span>Not synced</span>
+          </div>
+        )
+    }
   }
 
   if (isLoading) {
@@ -101,6 +202,7 @@ export function AccountList({ onAccountSelect, onReconcileComplete }: AccountLis
           <TableRow>
             <TableHead>Account Name</TableHead>
             <TableHead>Type</TableHead>
+            <TableHead>Sync Status</TableHead>
             <TableHead className="text-right">Balance</TableHead>
             <TableHead className="w-[100px]"></TableHead>
           </TableRow>
@@ -116,6 +218,7 @@ export function AccountList({ onAccountSelect, onReconcileComplete }: AccountLis
               <TableCell className="text-muted-foreground">
                 {getAccountTypeLabel(account.account_type)}
               </TableCell>
+              <TableCell>{renderSyncStatus(account)}</TableCell>
               <TableCell className="text-right tabular-nums">
                 {formatCurrency(account.balance)}
               </TableCell>
@@ -137,7 +240,7 @@ export function AccountList({ onAccountSelect, onReconcileComplete }: AccountLis
         </TableBody>
         <TableFooter>
           <TableRow>
-            <TableCell colSpan={2} className="font-semibold">Total</TableCell>
+            <TableCell colSpan={3} className="font-semibold">Total</TableCell>
             <TableCell className="text-right font-semibold tabular-nums">
               {formatCurrency(totalBalance.toString())}
             </TableCell>
