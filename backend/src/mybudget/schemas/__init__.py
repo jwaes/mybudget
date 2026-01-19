@@ -5,6 +5,18 @@ from mybudget.schemas.account import (
     AccountResponse,
     AccountUpdate,
 )
+from mybudget.schemas.bank_connection import (
+    BankConnectionCreate,
+    BankConnectionListResponse,
+    BankConnectionResponse,
+    BankConnectionWithAccountsResponse,
+    InstitutionListResponse,
+    InstitutionResponse,
+    LinkedAccountLink,
+    LinkedAccountResponse,
+    OAuthCallbackRequest,
+    OAuthInitResponse,
+)
 from mybudget.schemas.categorization_rule import (
     CategorizationRuleCreate,
     CategorizationRuleListResponse,
@@ -24,6 +36,14 @@ from mybudget.schemas.category import (
     CategoryUpdate,
     CategoryWithGroupResponse,
 )
+from mybudget.schemas.csv_import import (
+    CSVColumnMapping,
+    CSVImportRequest,
+    CSVImportResponse,
+    CSVPreviewRequest,
+    CSVPreviewResponse,
+    CSVTransactionPreview,
+)
 from mybudget.schemas.reconciliation import (
     ReconciliationAdjustmentResponse,
     ReconciliationBalanceResponse,
@@ -34,6 +54,12 @@ from mybudget.schemas.reconciliation import (
     ReconciliationResponse,
     ReconciliationUnmarkCleared,
     TransactionClearedResponse,
+)
+from mybudget.schemas.sync_job import (
+    SyncJobCreate,
+    SyncJobListResponse,
+    SyncJobResponse,
+    SyncStatusResponse,
 )
 from mybudget.schemas.target import (
     CategoryTargetCreate,
@@ -104,4 +130,27 @@ __all__ = [
     "ReconciliationAdjustmentResponse",
     "ReconciliationListResponse",
     "TransactionClearedResponse",
+    # Bank Connection
+    "BankConnectionCreate",
+    "BankConnectionResponse",
+    "BankConnectionWithAccountsResponse",
+    "BankConnectionListResponse",
+    "LinkedAccountResponse",
+    "LinkedAccountLink",
+    "InstitutionResponse",
+    "InstitutionListResponse",
+    "OAuthCallbackRequest",
+    "OAuthInitResponse",
+    # Sync Job
+    "SyncJobCreate",
+    "SyncJobResponse",
+    "SyncJobListResponse",
+    "SyncStatusResponse",
+    # CSV Import
+    "CSVColumnMapping",
+    "CSVPreviewRequest",
+    "CSVPreviewResponse",
+    "CSVTransactionPreview",
+    "CSVImportRequest",
+    "CSVImportResponse",
 ]

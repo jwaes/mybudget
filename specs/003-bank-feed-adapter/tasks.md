@@ -28,23 +28,23 @@
 
 ### Models & Migrations
 
-- [ ] T001 Create BankConnection model in backend/src/mybudget/models/bank_connection.py (id, user_id, provider, provider_connection_id, institution_id, institution_name, status, status_detail, last_sync_at, next_sync_at, access_valid_until, timestamps)
-- [ ] T002 [P] Create LinkedAccount model in backend/src/mybudget/models/linked_account.py (id, connection_id, account_id FK, provider_account_id, account_name, account_number_masked, account_type, currency, balance, is_active, timestamps)
-- [ ] T003 [P] Create SyncJob model in backend/src/mybudget/models/sync_job.py (id, connection_id, linked_account_id, status, trigger_type, started_at, completed_at, transactions_fetched, transactions_imported, transactions_duplicates, error_message)
+- [x] T001 Create BankConnection model in backend/src/mybudget/models/bank_connection.py (id, user_id, provider, provider_connection_id, institution_id, institution_name, status, status_detail, last_sync_at, next_sync_at, access_valid_until, timestamps)
+- [x] T002 [P] Create LinkedAccount model in backend/src/mybudget/models/bank_connection.py (consolidated with BankConnection)
+- [x] T003 [P] Create SyncJob model in backend/src/mybudget/models/bank_connection.py (consolidated with BankConnection)
 - [ ] T004 [P] Create CSVImportMapping model in backend/src/mybudget/models/csv_import_mapping.py (id, user_id, name, delimiter, date_column, date_format, amount_column, payee_column, memo_column)
 - [ ] T005 Add external_id, import_source, import_batch_id columns to Transaction model
-- [ ] T006 Generate Alembic migration for bank feed tables
-- [ ] T007 Create Pydantic schemas in backend/src/mybudget/schemas/bank_connection.py
-- [ ] T008 [P] Create Pydantic schemas in backend/src/mybudget/schemas/sync_job.py
-- [ ] T009 [P] Create Pydantic schemas in backend/src/mybudget/schemas/csv_import.py
-- [ ] T010 Test: Write unit tests for models in backend/tests/unit/test_models/test_bank_connection.py
+- [x] T006 Generate Alembic migration for bank feed tables
+- [x] T007 Create Pydantic schemas in backend/src/mybudget/schemas/bank_connection.py
+- [x] T008 [P] Create Pydantic schemas in backend/src/mybudget/schemas/sync_job.py
+- [x] T009 [P] Create Pydantic schemas in backend/src/mybudget/schemas/csv_import.py
+- [x] T010 Test: Write unit tests for models in backend/tests/unit/test_models/test_bank_connection.py
 
 ### Provider Adapter Interface
 
-- [ ] T011 Create BankProviderAdapter abstract base class in backend/src/mybudget/adapters/base.py (get_institutions, create_requisition, get_accounts, get_transactions, refresh_access, revoke_access)
-- [ ] T012 Create provider response dataclasses in backend/src/mybudget/adapters/types.py (Institution, ProviderAccount, ProviderTransaction)
-- [ ] T013 Create MockBankAdapter for testing in backend/src/mybudget/adapters/mock_adapter.py
-- [ ] T014 Test: Write unit tests for mock adapter in backend/tests/unit/test_adapters/test_mock_adapter.py
+- [x] T011 Create BankProviderAdapter abstract base class in backend/src/mybudget/adapters/base.py (get_institutions, create_requisition, get_accounts, get_transactions, refresh_access, revoke_access)
+- [x] T012 Create provider response dataclasses in backend/src/mybudget/adapters/types.py (Institution, ProviderAccount, ProviderTransaction)
+- [x] T013 Create MockBankAdapter for testing in backend/src/mybudget/adapters/mock_adapter.py
+- [x] T014 Test: Write unit tests for mock adapter in backend/tests/unit/test_adapters/test_mock_adapter.py (29 tests)
 
 **Checkpoint**: Data models and provider interface ready
 
