@@ -1,6 +1,15 @@
 """Database models."""
 from mybudget.models.account import Account, AccountType
 from mybudget.models.assignment import Assignment
+from mybudget.models.bank_connection import (
+    BankConnection,
+    BankConnectionStatus,
+    LinkedAccount,
+    LinkedAccountType,
+    SyncJob,
+    SyncJobStatus,
+    SyncTriggerType,
+)
 from mybudget.models.categorization_rule import CategorizationRule
 from mybudget.models.category import Category, CategoryGroup
 from mybudget.models.reconciliation import Reconciliation, ReconciliationStatus
@@ -22,4 +31,11 @@ __all__ = [
     "TargetType",
     "Reconciliation",
     "ReconciliationStatus",
+    "BankConnection",
+    "BankConnectionStatus",
+    "LinkedAccount",
+    "LinkedAccountType",
+    "SyncJob",
+    "SyncJobStatus",
+    "SyncTriggerType",
 ]

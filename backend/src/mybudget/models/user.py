@@ -4,11 +4,15 @@ User model.
 Represents a user account with authentication credentials.
 """
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from mybudget.db.base import Base
+
+if TYPE_CHECKING:
+    from mybudget.models.bank_connection import BankConnection
 
 
 def utc_now() -> datetime:
@@ -46,6 +50,11 @@ class User(Base):
         nullable=False,
         insert_default=utc_now,
         onupdate=utc_now,
+    )
+
+    # Relationships
+    bank_connections: Mapped[list["BankConnection"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
     )
 
     def __repr__(self) -> str:
