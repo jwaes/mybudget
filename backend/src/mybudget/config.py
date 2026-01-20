@@ -75,6 +75,26 @@ class Settings(BaseSettings):
         description="Fernet key for encrypting bank tokens (generate with: python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')",
     )
 
+    # Scheduler Configuration
+    BANK_SYNC_INTERVAL_HOURS: int = Field(
+        default=6,
+        ge=1,
+        le=24,
+        description="Interval in hours between automatic bank syncs (default: 6)",
+    )
+    BANK_SYNC_CHECK_INTERVAL_MINUTES: int = Field(
+        default=5,
+        ge=1,
+        le=60,
+        description="Interval in minutes for checking due sync jobs (default: 5)",
+    )
+    BANK_SYNC_MAX_RETRIES: int = Field(
+        default=3,
+        ge=1,
+        le=10,
+        description="Maximum number of retry attempts for failed sync jobs (default: 3)",
+    )
+
 
 # Global settings instance
 settings = Settings()

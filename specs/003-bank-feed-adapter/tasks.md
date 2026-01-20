@@ -139,15 +139,15 @@
 
 ### Scheduler Integration
 
-- [ ] T056 Install APScheduler dependency
-- [ ] T057 Create scheduler module in backend/src/mybudget/scheduler/__init__.py
-- [ ] T058 Create sync scheduler in backend/src/mybudget/scheduler/sync_scheduler.py
-- [ ] T059 [US2] Implement schedule_sync_job() - schedules next sync for connection
-- [ ] T060 [US2] Implement run_scheduled_syncs() - executes due sync jobs
-- [ ] T061 [US2] Implement handle_sync_failure() - retry logic with backoff
-- [ ] T062 Integrate scheduler startup in backend/src/mybudget/main.py
-- [ ] T063 Add BANK_SYNC_INTERVAL_HOURS configuration
-- [ ] T064 Test: Write unit tests in backend/tests/unit/test_scheduler/test_sync_scheduler.py
+- [x] T056 Install APScheduler dependency
+- [x] T057 Create scheduler module in backend/src/mybudget/scheduler/__init__.py
+- [x] T058 Create sync scheduler in backend/src/mybudget/scheduler/sync_scheduler.py
+- [x] T059 [US2] Implement schedule_sync_job() - schedules next sync for connection
+- [x] T060 [US2] Implement run_scheduled_syncs() - executes due sync jobs
+- [x] T061 [US2] Implement handle_sync_failure() - retry logic with backoff
+- [x] T062 Integrate scheduler startup in backend/src/mybudget/main.py
+- [x] T063 Add BANK_SYNC_INTERVAL_HOURS configuration
+- [x] T064 Test: Write unit tests in backend/tests/unit/test_scheduler/test_sync_scheduler.py (27 tests)
 
 **Checkpoint**: Automatic transaction sync operational
 

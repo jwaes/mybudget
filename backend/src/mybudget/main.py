@@ -4,6 +4,11 @@ FastAPI application entry point.
 This module initializes the FastAPI application with CORS, exception handlers,
 and API routers.
 """
+
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
+
+import structlog
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -27,9 +32,42 @@ from mybudget.api import (
 )
 from mybudget.config import settings
 from mybudget.lib.logging import configure_logging
+from mybudget.scheduler import scheduler
+from mybudget.scheduler.sync_scheduler import sync_scheduler
 
 # Configure structured logging
 configure_logging(json_logs=not settings.DEBUG, log_level="DEBUG" if settings.DEBUG else "INFO")
+
+logger = structlog.get_logger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
+    """
+    Application lifespan manager.
+
+    Handles startup and shutdown tasks:
+    - Start/stop the background task scheduler
+    """
+    # Startup
+    logger.info("Starting application...")
+
+    # Register and start the scheduler
+    sync_scheduler.register_jobs()
+    scheduler.start()
+    logger.info(
+        "Scheduler started",
+        sync_interval_hours=settings.BANK_SYNC_INTERVAL_HOURS,
+        check_interval_minutes=settings.BANK_SYNC_CHECK_INTERVAL_MINUTES,
+    )
+
+    yield
+
+    # Shutdown
+    logger.info("Shutting down application...")
+    scheduler.shutdown(wait=True)
+    logger.info("Scheduler stopped")
+
 
 # Create FastAPI app
 app = FastAPI(
@@ -38,6 +76,7 @@ app = FastAPI(
     description="Bank-sync budgeting app with intelligent spending targets",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
 # Setup Prometheus metrics instrumentation
