@@ -14,6 +14,7 @@ from sqlalchemy.exc import IntegrityError
 from mybudget.api import (
     accounts,
     auth,
+    bank_connections,
     budget,
     categories,
     categorization_rules,
@@ -163,4 +164,14 @@ app.include_router(
     csv_import.router,
     prefix=f"{settings.API_V1_PREFIX}/import/csv",
     tags=["CSV Import"],
+)
+app.include_router(
+    bank_connections.router,
+    prefix=f"{settings.API_V1_PREFIX}/connections",
+    tags=["Bank Connections"],
+)
+app.include_router(
+    bank_connections.institutions_router,
+    prefix=f"{settings.API_V1_PREFIX}/institutions",
+    tags=["Institutions"],
 )
