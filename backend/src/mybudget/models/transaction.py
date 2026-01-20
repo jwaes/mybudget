@@ -64,6 +64,9 @@ class Transaction(Base):
         updated_at: Last modification timestamp
         approved_at: When state changed to APPROVED
         cleared_at: When marked cleared during reconciliation
+        external_id: Provider's transaction ID (for deduplication)
+        import_source: Source of import (e.g., 'gocardless', 'csv')
+        import_batch_id: Links transactions from same sync/import
     """
 
     __tablename__ = "transactions"
@@ -123,6 +126,21 @@ class Transaction(Base):
     confidence_score: Mapped[Decimal | None] = mapped_column(
         Numeric(3, 2),
         nullable=True,
+    )
+    # Bank sync related fields
+    external_id: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+        index=True,
+    )
+    import_source: Mapped[str | None] = mapped_column(
+        String(50),
+        nullable=True,
+    )
+    import_batch_id: Mapped[UUID | None] = mapped_column(
+        PG_UUID(as_uuid=True),
+        nullable=True,
+        index=True,
     )
 
     __table_args__ = (

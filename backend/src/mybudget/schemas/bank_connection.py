@@ -3,6 +3,7 @@ Bank connection Pydantic schemas for API request/response validation.
 """
 from datetime import datetime
 from decimal import Decimal
+from enum import Enum
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -11,6 +12,14 @@ from mybudget.models.bank_connection import (
     BankConnectionStatus,
     LinkedAccountType,
 )
+
+
+class ConnectionHealthStatus(str, Enum):
+    """Health status of a bank connection."""
+
+    HEALTHY = "healthy"  # Active, valid token, recent sync
+    WARNING = "warning"  # Token expiring within 7 days or sync stale
+    ERROR = "error"  # Token expired, sync failed, or disconnected
 
 
 class BankConnectionCreate(BaseModel):
@@ -41,6 +50,7 @@ class BankConnectionResponse(BaseModel):
     access_valid_until: datetime | None = None
     created_at: datetime
     updated_at: datetime
+    health_status: ConnectionHealthStatus | None = None
 
 
 class BankConnectionWithAccountsResponse(BaseModel):
@@ -61,6 +71,7 @@ class BankConnectionWithAccountsResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     linked_accounts: list["LinkedAccountResponse"]
+    health_status: ConnectionHealthStatus | None = None
 
 
 class BankConnectionListResponse(BaseModel):
@@ -124,6 +135,12 @@ class OAuthInitResponse(BaseModel):
 
     authorization_url: str = Field(..., description="URL to redirect user for bank auth")
     reference_id: str = Field(..., description="Reference to track this connection request")
+
+
+class ReauthRequest(BaseModel):
+    """Schema for re-authentication request."""
+
+    redirect_url: str = Field(..., description="URL to redirect after OAuth")
 
 
 # Forward reference resolution

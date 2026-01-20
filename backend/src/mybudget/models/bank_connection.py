@@ -1,13 +1,13 @@
 """
 Bank connection models for external bank integrations.
 """
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from enum import Enum
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import DateTime, ForeignKey, Numeric, String, Text, Boolean
+from sqlalchemy import Boolean, DateTime, ForeignKey, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import ENUM
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -15,8 +15,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from mybudget.db.base import Base
 
 if TYPE_CHECKING:
-    from mybudget.models.user import User
     from mybudget.models.account import Account
+    from mybudget.models.user import User
 
 
 def utc_now() -> datetime:
@@ -32,6 +32,7 @@ class BankConnectionStatus(str, Enum):
     NEEDS_ATTENTION = "NEEDS_ATTENTION"
     ERROR = "ERROR"
     DISCONNECTED = "DISCONNECTED"
+    PENDING_REAUTH = "PENDING_REAUTH"
 
 
 class LinkedAccountType(str, Enum):

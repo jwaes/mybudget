@@ -8,6 +8,7 @@ from mybudget.services.csv_import_service import CSVImportService
 from mybudget.services.reconciliation_service import ReconciliationService
 from mybudget.services.target_service import TargetService
 from mybudget.services.transaction_service import TransactionService
+from mybudget.services.transaction_sync_service import TransactionSyncService
 
 __all__ = [
     "AccountService",
@@ -16,6 +17,7 @@ __all__ = [
     "CategoryService",
     "CSVImportService",
     "TransactionService",
+    "TransactionSyncService",
     "BudgetService",
     "TargetService",
     "ReconciliationService",

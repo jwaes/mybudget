@@ -6,7 +6,9 @@ This service handles the lifecycle of bank connections including:
 - Connection listing and retrieval
 - Disconnection and access revocation
 - Institution search
+- Connection health monitoring and re-authentication
 """
+from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
 from sqlalchemy import select
@@ -27,6 +29,7 @@ from mybudget.models.bank_connection import (
 from mybudget.schemas.bank_connection import (
     BankConnectionResponse,
     BankConnectionWithAccountsResponse,
+    ConnectionHealthStatus,
     InstitutionResponse,
     LinkedAccountResponse,
     OAuthInitResponse,
@@ -231,7 +234,7 @@ class BankConnectionService:
             user_id: User ID
 
         Returns:
-            List of BankConnectionResponse objects
+            List of BankConnectionResponse objects with computed health status
         """
         stmt = (
             select(BankConnection)
@@ -241,7 +244,13 @@ class BankConnectionService:
         result = await self.db.execute(stmt)
         connections = list(result.scalars().all())
 
-        return [BankConnectionResponse.model_validate(conn) for conn in connections]
+        responses = []
+        for conn in connections:
+            response = BankConnectionResponse.model_validate(conn)
+            response.health_status = self.compute_health_status(conn)
+            responses.append(response)
+
+        return responses
 
     async def get_connection(
         self,
@@ -272,6 +281,8 @@ class BankConnectionService:
         if not connection:
             return None
 
+        health_status = self.compute_health_status(connection)
+
         return BankConnectionWithAccountsResponse(
             id=connection.id,
             user_id=connection.user_id,
@@ -289,6 +300,7 @@ class BankConnectionService:
                 LinkedAccountResponse.model_validate(la)
                 for la in connection.linked_accounts
             ],
+            health_status=health_status,
         )
 
     async def disconnect(
@@ -360,3 +372,244 @@ class BankConnectionService:
             )
             for inst in institutions
         ]
+
+    # Health Monitoring Methods
+
+    def compute_health_status(
+        self,
+        connection: BankConnection,
+        warning_days: int = 7,
+        stale_hours: int = 24,
+    ) -> ConnectionHealthStatus:
+        """
+        Compute the health status of a bank connection.
+
+        Args:
+            connection: BankConnection model instance
+            warning_days: Days before expiry to trigger warning (default 7)
+            stale_hours: Hours since last sync to consider stale (default 24)
+
+        Returns:
+            ConnectionHealthStatus: HEALTHY, WARNING, or ERROR
+        """
+        now = datetime.now(UTC)
+
+        # ERROR conditions
+        if connection.status not in (
+            BankConnectionStatus.ACTIVE,
+            BankConnectionStatus.NEEDS_ATTENTION,
+        ):
+            return ConnectionHealthStatus.ERROR
+
+        if (
+            connection.access_valid_until is not None
+            and connection.access_valid_until <= now
+        ):
+            return ConnectionHealthStatus.ERROR
+
+        # WARNING conditions
+        if connection.access_valid_until is not None:
+            warning_threshold = now + timedelta(days=warning_days)
+            if connection.access_valid_until <= warning_threshold:
+                return ConnectionHealthStatus.WARNING
+
+        # Check for stale sync (optional: only if last_sync_at is set)
+        if connection.last_sync_at is not None:
+            stale_threshold = now - timedelta(hours=stale_hours)
+            if connection.last_sync_at < stale_threshold:
+                # Check if last sync job failed
+                # For now, treat as warning if sync is stale
+                return ConnectionHealthStatus.WARNING
+
+        return ConnectionHealthStatus.HEALTHY
+
+    async def check_connection_health(
+        self,
+        connection_id: UUID,
+    ) -> ConnectionHealthStatus | None:
+        """
+        Check the health status of a specific connection.
+
+        Args:
+            connection_id: Connection ID to check
+
+        Returns:
+            ConnectionHealthStatus if found, None if connection not found
+        """
+        stmt = select(BankConnection).where(BankConnection.id == connection_id)
+        result = await self.db.execute(stmt)
+        connection = result.scalar_one_or_none()
+
+        if not connection:
+            return None
+
+        return self.compute_health_status(connection)
+
+    async def detect_expiring_tokens(
+        self,
+        days_ahead: int = 7,
+    ) -> list[BankConnection]:
+        """
+        Find connections with tokens expiring within the specified days.
+
+        Used by scheduler to proactively notify users about expiring connections.
+
+        Args:
+            days_ahead: Number of days to look ahead (default 7)
+
+        Returns:
+            List of BankConnection objects needing re-authentication
+        """
+        now = datetime.now(UTC)
+        threshold = now + timedelta(days=days_ahead)
+
+        stmt = select(BankConnection).where(
+            BankConnection.status == BankConnectionStatus.ACTIVE,
+            BankConnection.access_valid_until.isnot(None),
+            BankConnection.access_valid_until <= threshold,
+        )
+        result = await self.db.execute(stmt)
+        return list(result.scalars().all())
+
+    async def initiate_reauth(
+        self,
+        user_id: UUID,
+        connection_id: UUID,
+        redirect_url: str,
+    ) -> OAuthInitResponse:
+        """
+        Initiate re-authentication for an existing connection.
+
+        Similar to initiate_connection but for an existing connection
+        that needs token refresh due to expiration.
+
+        Args:
+            user_id: User ID (for access control)
+            connection_id: Connection ID to re-authenticate
+            redirect_url: URL to redirect after OAuth
+
+        Returns:
+            OAuthInitResponse with authorization URL and reference ID
+
+        Raises:
+            ValueError: If connection not found or not owned by user
+            RuntimeError: If requisition creation fails
+        """
+        # Find the existing connection
+        stmt = select(BankConnection).where(
+            BankConnection.id == connection_id,
+            BankConnection.user_id == user_id,
+        )
+        result = await self.db.execute(stmt)
+        connection = result.scalar_one_or_none()
+
+        if not connection:
+            raise ValueError("Connection not found")
+
+        # Validate connection can be re-authenticated
+        if connection.status == BankConnectionStatus.DISCONNECTED:
+            raise ValueError("Cannot re-authenticate a disconnected connection")
+
+        # Get institution details from adapter
+        institution = await self.adapter.get_institution(connection.institution_id)
+        if not institution:
+            raise ValueError(f"Institution no longer available: {connection.institution_id}")
+
+        # Generate unique reference for tracking
+        reference = str(uuid4())
+
+        # Create new requisition with provider
+        requisition = await self.adapter.create_requisition(
+            institution_id=connection.institution_id,
+            redirect_url=redirect_url,
+            reference=reference,
+        )
+
+        # Update connection status and provider connection ID
+        connection.status = BankConnectionStatus.PENDING_REAUTH
+        connection.provider_connection_id = requisition.id
+        connection.status_detail = "Re-authentication in progress"
+
+        await self.db.commit()
+
+        return OAuthInitResponse(
+            authorization_url=requisition.link,
+            reference_id=reference,
+        )
+
+    async def complete_reauth(
+        self,
+        user_id: UUID,
+    ) -> BankConnectionWithAccountsResponse:
+        """
+        Complete re-authentication OAuth flow.
+
+        Finds the pending re-auth connection and updates its access token.
+
+        Args:
+            user_id: User completing the OAuth flow
+
+        Returns:
+            BankConnectionWithAccountsResponse with updated connection
+
+        Raises:
+            ValueError: If no pending re-auth connection found
+        """
+        # Find the pending re-auth connection
+        stmt = (
+            select(BankConnection)
+            .options(selectinload(BankConnection.linked_accounts))
+            .where(
+                BankConnection.user_id == user_id,
+                BankConnection.status == BankConnectionStatus.PENDING_REAUTH,
+            )
+        )
+        result = await self.db.execute(stmt)
+        connections = list(result.scalars().all())
+
+        # Find connection with completed requisition
+        connection = None
+        requisition_status = None
+        for conn in connections:
+            status = await self.adapter.get_requisition(conn.provider_connection_id)
+            if (
+                status
+                and status.requisition_id == conn.provider_connection_id
+                and status.status == "LN"  # Linked status
+            ):
+                connection = conn
+                requisition_status = status
+                break
+
+        if not connection or not requisition_status:
+            raise ValueError("No pending re-auth connection found or OAuth not completed")
+
+        # Update connection with new access expiry
+        connection.status = BankConnectionStatus.ACTIVE
+        connection.status_detail = None
+        connection.access_valid_until = requisition_status.access_valid_until
+
+        await self.db.commit()
+        await self.db.refresh(connection)
+
+        health_status = self.compute_health_status(connection)
+
+        return BankConnectionWithAccountsResponse(
+            id=connection.id,
+            user_id=connection.user_id,
+            provider=connection.provider,
+            institution_id=connection.institution_id,
+            institution_name=connection.institution_name,
+            status=connection.status,
+            status_detail=connection.status_detail,
+            last_sync_at=connection.last_sync_at,
+            next_sync_at=connection.next_sync_at,
+            access_valid_until=connection.access_valid_until,
+            created_at=connection.created_at,
+            updated_at=connection.updated_at,
+            linked_accounts=[
+                LinkedAccountResponse.model_validate(la)
+                for la in connection.linked_accounts
+            ],
+            health_status=health_status,
+        )

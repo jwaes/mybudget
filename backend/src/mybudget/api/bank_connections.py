@@ -20,6 +20,7 @@ from mybudget.schemas.bank_connection import (
     InstitutionListResponse,
     InstitutionResponse,
     OAuthInitResponse,
+    ReauthRequest,
 )
 from mybudget.services.bank_connection_service import BankConnectionService
 
@@ -135,6 +136,40 @@ async def get_connection(
         )
 
     return connection
+
+
+@router.post("/{connection_id}/reauth", response_model=OAuthInitResponse)
+async def initiate_reauth(
+    connection_id: UUID,
+    data: ReauthRequest,
+    current_user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    adapter: Annotated[BankProviderAdapter, Depends(get_bank_adapter)],
+) -> OAuthInitResponse:
+    """
+    Initiate re-authentication for an expiring or expired connection.
+
+    Returns an authorization URL where the user should be redirected
+    to complete bank re-authentication.
+    """
+    service = BankConnectionService(db, adapter)
+    try:
+        result = await service.initiate_reauth(
+            user_id=current_user.id,
+            connection_id=connection_id,
+            redirect_url=data.redirect_url,
+        )
+        return result
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        ) from None
+    except RuntimeError as e:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Bank provider error: {e}",
+        ) from None
 
 
 @router.delete("/{connection_id}", status_code=status.HTTP_204_NO_CONTENT)

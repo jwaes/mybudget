@@ -18,6 +18,7 @@ from mybudget.models.bank_connection import (
     LinkedAccountType,
 )
 from mybudget.models.user import User
+from mybudget.schemas.bank_connection import ConnectionHealthStatus
 
 
 @pytest.mark.contract
@@ -681,3 +682,359 @@ class TestConnectionIsolation:
         # Verify connection is still active
         await db_session.refresh(conn)
         assert conn.status == BankConnectionStatus.ACTIVE
+
+
+@pytest.mark.contract
+class TestConnectionHealthStatusAPI:
+    """Contract tests for connection health status in responses."""
+
+    @pytest.mark.asyncio
+    async def test_list_connections_includes_health_status(
+        self, client: AsyncClient, db_session: AsyncSession
+    ) -> None:
+        """Test that list connections includes health_status field."""
+        user = User(
+            email="health_list@example.com",
+            password_hash=hash_password("password123"),
+            timezone="UTC",
+        )
+        db_session.add(user)
+        await db_session.flush()
+
+        # Create an active connection with valid token
+        connection = BankConnection(
+            user_id=user.id,
+            provider="mock",
+            provider_connection_id="REQ-HEALTH-1",
+            institution_id="SANDBOXFINANCE_SFIN0000",
+            institution_name="Sandbox Finance",
+            status=BankConnectionStatus.ACTIVE,
+            access_valid_until=datetime.now(UTC) + timedelta(days=90),
+            last_sync_at=datetime.now(UTC) - timedelta(hours=1),
+        )
+        db_session.add(connection)
+        await db_session.flush()
+
+        token = create_session_token(user.id)
+        cookies = {SESSION_COOKIE_NAME: token}
+
+        response = await client.get("/api/connections/", cookies=cookies)
+
+        assert response.status_code == 200
+        data = response.json()
+        assert len(data["connections"]) == 1
+        assert "health_status" in data["connections"][0]
+        assert data["connections"][0]["health_status"] == ConnectionHealthStatus.HEALTHY.value
+
+    @pytest.mark.asyncio
+    async def test_get_connection_includes_health_status(
+        self, client: AsyncClient, db_session: AsyncSession
+    ) -> None:
+        """Test that get connection includes health_status field."""
+        user = User(
+            email="health_get@example.com",
+            password_hash=hash_password("password123"),
+            timezone="UTC",
+        )
+        db_session.add(user)
+        await db_session.flush()
+
+        connection = BankConnection(
+            user_id=user.id,
+            provider="mock",
+            provider_connection_id="REQ-HEALTH-2",
+            institution_id="SANDBOXFINANCE_SFIN0000",
+            institution_name="Sandbox Finance",
+            status=BankConnectionStatus.ACTIVE,
+            access_valid_until=datetime.now(UTC) + timedelta(days=90),
+        )
+        db_session.add(connection)
+        await db_session.flush()
+
+        token = create_session_token(user.id)
+        cookies = {SESSION_COOKIE_NAME: token}
+
+        response = await client.get(
+            f"/api/connections/{connection.id}", cookies=cookies
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "health_status" in data
+        assert data["health_status"] == ConnectionHealthStatus.HEALTHY.value
+
+    @pytest.mark.asyncio
+    async def test_health_status_warning_for_expiring_token(
+        self, client: AsyncClient, db_session: AsyncSession
+    ) -> None:
+        """Test warning health status when token is expiring soon."""
+        user = User(
+            email="health_warning@example.com",
+            password_hash=hash_password("password123"),
+            timezone="UTC",
+        )
+        db_session.add(user)
+        await db_session.flush()
+
+        # Token expires in 5 days (within 7-day warning threshold)
+        connection = BankConnection(
+            user_id=user.id,
+            provider="mock",
+            provider_connection_id="REQ-HEALTH-3",
+            institution_id="SANDBOXFINANCE_SFIN0000",
+            institution_name="Sandbox Finance",
+            status=BankConnectionStatus.ACTIVE,
+            access_valid_until=datetime.now(UTC) + timedelta(days=5),
+        )
+        db_session.add(connection)
+        await db_session.flush()
+
+        token = create_session_token(user.id)
+        cookies = {SESSION_COOKIE_NAME: token}
+
+        response = await client.get(
+            f"/api/connections/{connection.id}", cookies=cookies
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["health_status"] == ConnectionHealthStatus.WARNING.value
+
+    @pytest.mark.asyncio
+    async def test_health_status_error_for_expired_token(
+        self, client: AsyncClient, db_session: AsyncSession
+    ) -> None:
+        """Test error health status when token is expired."""
+        user = User(
+            email="health_error@example.com",
+            password_hash=hash_password("password123"),
+            timezone="UTC",
+        )
+        db_session.add(user)
+        await db_session.flush()
+
+        # Token expired yesterday
+        connection = BankConnection(
+            user_id=user.id,
+            provider="mock",
+            provider_connection_id="REQ-HEALTH-4",
+            institution_id="SANDBOXFINANCE_SFIN0000",
+            institution_name="Sandbox Finance",
+            status=BankConnectionStatus.ACTIVE,
+            access_valid_until=datetime.now(UTC) - timedelta(days=1),
+        )
+        db_session.add(connection)
+        await db_session.flush()
+
+        token = create_session_token(user.id)
+        cookies = {SESSION_COOKIE_NAME: token}
+
+        response = await client.get(
+            f"/api/connections/{connection.id}", cookies=cookies
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["health_status"] == ConnectionHealthStatus.ERROR.value
+
+
+@pytest.mark.contract
+class TestReauthAPI:
+    """Contract tests for POST /api/connections/{id}/reauth."""
+
+    @pytest.mark.asyncio
+    async def test_reauth_initiate_success(
+        self, client: AsyncClient, db_session: AsyncSession
+    ) -> None:
+        """Test initiating re-authentication successfully."""
+        user = User(
+            email="reauth_success@example.com",
+            password_hash=hash_password("password123"),
+            timezone="UTC",
+        )
+        db_session.add(user)
+        await db_session.flush()
+
+        # Create active connection with expiring token
+        connection = BankConnection(
+            user_id=user.id,
+            provider="mock",
+            provider_connection_id="REQ-REAUTH-1",
+            institution_id="SANDBOXFINANCE_SFIN0000",
+            institution_name="Sandbox Finance",
+            status=BankConnectionStatus.ACTIVE,
+            access_valid_until=datetime.now(UTC) + timedelta(days=3),
+        )
+        db_session.add(connection)
+        await db_session.flush()
+
+        token = create_session_token(user.id)
+        cookies = {SESSION_COOKIE_NAME: token}
+
+        response = await client.post(
+            f"/api/connections/{connection.id}/reauth",
+            json={"redirect_url": "https://app.example.com/callback"},
+            cookies=cookies,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "authorization_url" in data
+        assert "reference_id" in data
+        assert "mock-bank.example.com" in data["authorization_url"]
+
+        # Verify connection status was updated
+        await db_session.refresh(connection)
+        assert connection.status == BankConnectionStatus.PENDING_REAUTH
+
+    @pytest.mark.asyncio
+    async def test_reauth_connection_not_found(
+        self, client: AsyncClient, db_session: AsyncSession
+    ) -> None:
+        """Test reauth for non-existent connection returns 400."""
+        user = User(
+            email="reauth_notfound@example.com",
+            password_hash=hash_password("password123"),
+            timezone="UTC",
+        )
+        db_session.add(user)
+        await db_session.flush()
+
+        token = create_session_token(user.id)
+        cookies = {SESSION_COOKIE_NAME: token}
+
+        response = await client.post(
+            f"/api/connections/{uuid4()}/reauth",
+            json={"redirect_url": "https://app.example.com/callback"},
+            cookies=cookies,
+        )
+
+        assert response.status_code == 400
+        assert "Connection not found" in response.json()["detail"]
+
+    @pytest.mark.asyncio
+    async def test_reauth_disconnected_connection(
+        self, client: AsyncClient, db_session: AsyncSession
+    ) -> None:
+        """Test reauth for disconnected connection fails."""
+        user = User(
+            email="reauth_disconnected@example.com",
+            password_hash=hash_password("password123"),
+            timezone="UTC",
+        )
+        db_session.add(user)
+        await db_session.flush()
+
+        connection = BankConnection(
+            user_id=user.id,
+            provider="mock",
+            provider_connection_id="REQ-REAUTH-2",
+            institution_id="SANDBOXFINANCE_SFIN0000",
+            institution_name="Sandbox Finance",
+            status=BankConnectionStatus.DISCONNECTED,
+        )
+        db_session.add(connection)
+        await db_session.flush()
+
+        token = create_session_token(user.id)
+        cookies = {SESSION_COOKIE_NAME: token}
+
+        response = await client.post(
+            f"/api/connections/{connection.id}/reauth",
+            json={"redirect_url": "https://app.example.com/callback"},
+            cookies=cookies,
+        )
+
+        assert response.status_code == 400
+        assert "Cannot re-authenticate a disconnected connection" in response.json()["detail"]
+
+    @pytest.mark.asyncio
+    async def test_reauth_other_user_connection(
+        self, client: AsyncClient, db_session: AsyncSession
+    ) -> None:
+        """Test reauth for another user's connection returns 400."""
+        user1 = User(
+            email="reauth_user1@example.com",
+            password_hash=hash_password("password123"),
+            timezone="UTC",
+        )
+        user2 = User(
+            email="reauth_user2@example.com",
+            password_hash=hash_password("password123"),
+            timezone="UTC",
+        )
+        db_session.add(user1)
+        db_session.add(user2)
+        await db_session.flush()
+
+        connection = BankConnection(
+            user_id=user1.id,
+            provider="mock",
+            provider_connection_id="REQ-REAUTH-3",
+            institution_id="SANDBOXFINANCE_SFIN0000",
+            institution_name="Sandbox Finance",
+            status=BankConnectionStatus.ACTIVE,
+        )
+        db_session.add(connection)
+        await db_session.flush()
+
+        # User2 tries to reauth user1's connection
+        token = create_session_token(user2.id)
+        cookies = {SESSION_COOKIE_NAME: token}
+
+        response = await client.post(
+            f"/api/connections/{connection.id}/reauth",
+            json={"redirect_url": "https://app.example.com/callback"},
+            cookies=cookies,
+        )
+
+        # Should return 400 "Connection not found"
+        assert response.status_code == 400
+        assert "Connection not found" in response.json()["detail"]
+
+    @pytest.mark.asyncio
+    async def test_reauth_unauthenticated(
+        self, client: AsyncClient, db_session: AsyncSession
+    ) -> None:
+        """Test reauth without authentication fails."""
+        response = await client.post(
+            f"/api/connections/{uuid4()}/reauth",
+            json={"redirect_url": "https://app.example.com/callback"},
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.asyncio
+    async def test_reauth_missing_redirect_url(
+        self, client: AsyncClient, db_session: AsyncSession
+    ) -> None:
+        """Test reauth without redirect_url fails validation."""
+        user = User(
+            email="reauth_noredirect@example.com",
+            password_hash=hash_password("password123"),
+            timezone="UTC",
+        )
+        db_session.add(user)
+        await db_session.flush()
+
+        connection = BankConnection(
+            user_id=user.id,
+            provider="mock",
+            provider_connection_id="REQ-REAUTH-4",
+            institution_id="SANDBOXFINANCE_SFIN0000",
+            institution_name="Sandbox Finance",
+            status=BankConnectionStatus.ACTIVE,
+        )
+        db_session.add(connection)
+        await db_session.flush()
+
+        token = create_session_token(user.id)
+        cookies = {SESSION_COOKIE_NAME: token}
+
+        response = await client.post(
+            f"/api/connections/{connection.id}/reauth",
+            json={},
+            cookies=cookies,
+        )
+
+        assert response.status_code == 422

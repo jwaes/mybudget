@@ -1,7 +1,8 @@
 """
 Unit tests for BankConnectionService.
 
-Tests bank connection operations: initiate, complete OAuth, list, get, disconnect.
+Tests bank connection operations: initiate, complete OAuth, list, get, disconnect,
+and health monitoring/re-authentication.
 """
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
@@ -20,6 +21,7 @@ from mybudget.models.bank_connection import (
     SyncJob,
     SyncTriggerType,
 )
+from mybudget.schemas.bank_connection import ConnectionHealthStatus
 from mybudget.services.bank_connection_service import (
     BankConnectionService,
     _map_account_type,
@@ -578,3 +580,383 @@ class TestUserIsolation:
         result = await service.disconnect(other_user_id, connection_id)
 
         assert result is False
+
+
+class TestComputeHealthStatus:
+    """Tests for compute_health_status method."""
+
+    def test_healthy_connection_with_valid_token(self) -> None:
+        """Test healthy connection with valid token and recent sync."""
+        mock_db = MagicMock()
+        mock_adapter = MockBankAdapter()
+        service = BankConnectionService(mock_db, mock_adapter)
+
+        mock_connection = MagicMock(spec=BankConnection)
+        mock_connection.status = BankConnectionStatus.ACTIVE
+        mock_connection.access_valid_until = datetime.now(UTC) + timedelta(days=30)
+        mock_connection.last_sync_at = datetime.now(UTC) - timedelta(hours=1)
+
+        result = service.compute_health_status(mock_connection)
+
+        assert result == ConnectionHealthStatus.HEALTHY
+
+    def test_error_when_status_not_active(self) -> None:
+        """Test error status for non-active connections."""
+        mock_db = MagicMock()
+        mock_adapter = MockBankAdapter()
+        service = BankConnectionService(mock_db, mock_adapter)
+
+        for status in [
+            BankConnectionStatus.PENDING,
+            BankConnectionStatus.ERROR,
+            BankConnectionStatus.DISCONNECTED,
+            BankConnectionStatus.PENDING_REAUTH,
+        ]:
+            mock_connection = MagicMock(spec=BankConnection)
+            mock_connection.status = status
+            mock_connection.access_valid_until = datetime.now(UTC) + timedelta(days=30)
+            mock_connection.last_sync_at = None
+
+            result = service.compute_health_status(mock_connection)
+
+            assert result == ConnectionHealthStatus.ERROR, f"Expected ERROR for status {status}"
+
+    def test_error_when_token_expired(self) -> None:
+        """Test error status when token is expired."""
+        mock_db = MagicMock()
+        mock_adapter = MockBankAdapter()
+        service = BankConnectionService(mock_db, mock_adapter)
+
+        mock_connection = MagicMock(spec=BankConnection)
+        mock_connection.status = BankConnectionStatus.ACTIVE
+        mock_connection.access_valid_until = datetime.now(UTC) - timedelta(hours=1)
+        mock_connection.last_sync_at = None
+
+        result = service.compute_health_status(mock_connection)
+
+        assert result == ConnectionHealthStatus.ERROR
+
+    def test_warning_when_token_expiring_soon(self) -> None:
+        """Test warning status when token is expiring within 7 days."""
+        mock_db = MagicMock()
+        mock_adapter = MockBankAdapter()
+        service = BankConnectionService(mock_db, mock_adapter)
+
+        mock_connection = MagicMock(spec=BankConnection)
+        mock_connection.status = BankConnectionStatus.ACTIVE
+        mock_connection.access_valid_until = datetime.now(UTC) + timedelta(days=5)
+        mock_connection.last_sync_at = datetime.now(UTC) - timedelta(hours=1)
+
+        result = service.compute_health_status(mock_connection)
+
+        assert result == ConnectionHealthStatus.WARNING
+
+    def test_warning_when_sync_stale(self) -> None:
+        """Test warning status when last sync is stale (>24h)."""
+        mock_db = MagicMock()
+        mock_adapter = MockBankAdapter()
+        service = BankConnectionService(mock_db, mock_adapter)
+
+        mock_connection = MagicMock(spec=BankConnection)
+        mock_connection.status = BankConnectionStatus.ACTIVE
+        mock_connection.access_valid_until = datetime.now(UTC) + timedelta(days=30)
+        mock_connection.last_sync_at = datetime.now(UTC) - timedelta(hours=30)
+
+        result = service.compute_health_status(mock_connection)
+
+        assert result == ConnectionHealthStatus.WARNING
+
+    def test_healthy_when_no_last_sync(self) -> None:
+        """Test healthy status when no sync has occurred yet."""
+        mock_db = MagicMock()
+        mock_adapter = MockBankAdapter()
+        service = BankConnectionService(mock_db, mock_adapter)
+
+        mock_connection = MagicMock(spec=BankConnection)
+        mock_connection.status = BankConnectionStatus.ACTIVE
+        mock_connection.access_valid_until = datetime.now(UTC) + timedelta(days=30)
+        mock_connection.last_sync_at = None
+
+        result = service.compute_health_status(mock_connection)
+
+        assert result == ConnectionHealthStatus.HEALTHY
+
+    def test_healthy_when_no_access_valid_until(self) -> None:
+        """Test healthy status when access_valid_until is not set."""
+        mock_db = MagicMock()
+        mock_adapter = MockBankAdapter()
+        service = BankConnectionService(mock_db, mock_adapter)
+
+        mock_connection = MagicMock(spec=BankConnection)
+        mock_connection.status = BankConnectionStatus.ACTIVE
+        mock_connection.access_valid_until = None
+        mock_connection.last_sync_at = datetime.now(UTC) - timedelta(hours=1)
+
+        result = service.compute_health_status(mock_connection)
+
+        assert result == ConnectionHealthStatus.HEALTHY
+
+    def test_needs_attention_status_is_not_error(self) -> None:
+        """Test that NEEDS_ATTENTION status doesn't result in ERROR health."""
+        mock_db = MagicMock()
+        mock_adapter = MockBankAdapter()
+        service = BankConnectionService(mock_db, mock_adapter)
+
+        mock_connection = MagicMock(spec=BankConnection)
+        mock_connection.status = BankConnectionStatus.NEEDS_ATTENTION
+        mock_connection.access_valid_until = datetime.now(UTC) + timedelta(days=30)
+        mock_connection.last_sync_at = datetime.now(UTC) - timedelta(hours=1)
+
+        result = service.compute_health_status(mock_connection)
+
+        assert result == ConnectionHealthStatus.HEALTHY
+
+
+class TestCheckConnectionHealth:
+    """Tests for check_connection_health method."""
+
+    @pytest.mark.asyncio
+    async def test_check_connection_health_found(self) -> None:
+        """Test checking health of existing connection."""
+        mock_db = AsyncMock()
+        mock_adapter = MockBankAdapter()
+        service = BankConnectionService(mock_db, mock_adapter)
+
+        connection_id = uuid4()
+        mock_connection = MagicMock(spec=BankConnection)
+        mock_connection.id = connection_id
+        mock_connection.status = BankConnectionStatus.ACTIVE
+        mock_connection.access_valid_until = datetime.now(UTC) + timedelta(days=30)
+        mock_connection.last_sync_at = datetime.now(UTC) - timedelta(hours=1)
+
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = mock_connection
+        mock_db.execute.return_value = mock_result
+
+        result = await service.check_connection_health(connection_id)
+
+        assert result == ConnectionHealthStatus.HEALTHY
+
+    @pytest.mark.asyncio
+    async def test_check_connection_health_not_found(self) -> None:
+        """Test checking health of non-existent connection."""
+        mock_db = AsyncMock()
+        mock_adapter = MockBankAdapter()
+        service = BankConnectionService(mock_db, mock_adapter)
+
+        connection_id = uuid4()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = None
+        mock_db.execute.return_value = mock_result
+
+        result = await service.check_connection_health(connection_id)
+
+        assert result is None
+
+
+class TestDetectExpiringTokens:
+    """Tests for detect_expiring_tokens method."""
+
+    @pytest.mark.asyncio
+    async def test_detect_expiring_tokens_finds_connections(self) -> None:
+        """Test finding connections with expiring tokens."""
+        mock_db = AsyncMock()
+        mock_adapter = MockBankAdapter()
+        service = BankConnectionService(mock_db, mock_adapter)
+
+        user_id = uuid4()
+
+        # Create mock connections
+        mock_connections = [
+            MagicMock(spec=BankConnection),
+            MagicMock(spec=BankConnection),
+        ]
+        for i, conn in enumerate(mock_connections):
+            conn.id = uuid4()
+            conn.user_id = user_id
+            conn.status = BankConnectionStatus.ACTIVE
+            conn.access_valid_until = datetime.now(UTC) + timedelta(days=3 + i)
+
+        mock_result = MagicMock()
+        mock_scalars = MagicMock()
+        mock_scalars.all.return_value = mock_connections
+        mock_result.scalars.return_value = mock_scalars
+        mock_db.execute.return_value = mock_result
+
+        result = await service.detect_expiring_tokens(days_ahead=7)
+
+        assert len(result) == 2
+
+    @pytest.mark.asyncio
+    async def test_detect_expiring_tokens_empty(self) -> None:
+        """Test detect expiring tokens when no connections are expiring."""
+        mock_db = AsyncMock()
+        mock_adapter = MockBankAdapter()
+        service = BankConnectionService(mock_db, mock_adapter)
+
+        mock_result = MagicMock()
+        mock_scalars = MagicMock()
+        mock_scalars.all.return_value = []
+        mock_result.scalars.return_value = mock_scalars
+        mock_db.execute.return_value = mock_result
+
+        result = await service.detect_expiring_tokens(days_ahead=7)
+
+        assert result == []
+
+
+class TestInitiateReauth:
+    """Tests for initiate_reauth method."""
+
+    @pytest.mark.asyncio
+    async def test_initiate_reauth_success(self) -> None:
+        """Test initiating re-authentication successfully."""
+        mock_db = AsyncMock()
+        mock_adapter = MockBankAdapter()
+        service = BankConnectionService(mock_db, mock_adapter)
+
+        user_id = uuid4()
+        connection_id = uuid4()
+
+        mock_connection = MagicMock(spec=BankConnection)
+        mock_connection.id = connection_id
+        mock_connection.user_id = user_id
+        mock_connection.institution_id = "SANDBOXFINANCE_SFIN0000"
+        mock_connection.status = BankConnectionStatus.ACTIVE
+
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = mock_connection
+        mock_db.execute.return_value = mock_result
+        mock_db.commit = AsyncMock()
+
+        result = await service.initiate_reauth(
+            user_id=user_id,
+            connection_id=connection_id,
+            redirect_url="https://app.example.com/callback",
+        )
+
+        assert result.authorization_url is not None
+        assert "mock-bank.example.com" in result.authorization_url
+        assert result.reference_id is not None
+        assert mock_connection.status == BankConnectionStatus.PENDING_REAUTH
+        mock_db.commit.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_initiate_reauth_connection_not_found(self) -> None:
+        """Test initiate reauth fails for non-existent connection."""
+        mock_db = AsyncMock()
+        mock_adapter = MockBankAdapter()
+        service = BankConnectionService(mock_db, mock_adapter)
+
+        user_id = uuid4()
+        connection_id = uuid4()
+
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = None
+        mock_db.execute.return_value = mock_result
+
+        with pytest.raises(ValueError, match="Connection not found"):
+            await service.initiate_reauth(
+                user_id=user_id,
+                connection_id=connection_id,
+                redirect_url="https://app.example.com/callback",
+            )
+
+    @pytest.mark.asyncio
+    async def test_initiate_reauth_disconnected_connection(self) -> None:
+        """Test initiate reauth fails for disconnected connection."""
+        mock_db = AsyncMock()
+        mock_adapter = MockBankAdapter()
+        service = BankConnectionService(mock_db, mock_adapter)
+
+        user_id = uuid4()
+        connection_id = uuid4()
+
+        mock_connection = MagicMock(spec=BankConnection)
+        mock_connection.id = connection_id
+        mock_connection.user_id = user_id
+        mock_connection.status = BankConnectionStatus.DISCONNECTED
+
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = mock_connection
+        mock_db.execute.return_value = mock_result
+
+        with pytest.raises(ValueError, match="Cannot re-authenticate a disconnected connection"):
+            await service.initiate_reauth(
+                user_id=user_id,
+                connection_id=connection_id,
+                redirect_url="https://app.example.com/callback",
+            )
+
+
+class TestCompleteReauth:
+    """Tests for complete_reauth method."""
+
+    @pytest.mark.asyncio
+    async def test_complete_reauth_success(self) -> None:
+        """Test completing re-auth flow successfully."""
+        mock_db = AsyncMock()
+        mock_adapter = MockBankAdapter()
+        service = BankConnectionService(mock_db, mock_adapter)
+
+        user_id = uuid4()
+        connection_id = uuid4()
+
+        # Set up mock requisition in adapter
+        requisition_id = "REQ-REAUTH-123"
+        mock_adapter.add_requisition(
+            requisition_id=requisition_id,
+            institution_id="SANDBOXFINANCE_SFIN0000",
+            status="LN",  # Linked
+        )
+
+        # Create mock pending reauth connection
+        mock_connection = MagicMock(spec=BankConnection)
+        mock_connection.id = connection_id
+        mock_connection.user_id = user_id
+        mock_connection.provider = "mock"
+        mock_connection.provider_connection_id = requisition_id
+        mock_connection.institution_id = "SANDBOXFINANCE_SFIN0000"
+        mock_connection.institution_name = "Sandbox Finance"
+        mock_connection.status = BankConnectionStatus.PENDING_REAUTH
+        mock_connection.status_detail = "Re-authentication in progress"
+        mock_connection.last_sync_at = datetime.now(UTC) - timedelta(hours=1)
+        mock_connection.next_sync_at = None
+        mock_connection.access_valid_until = None
+        mock_connection.created_at = datetime.now(UTC) - timedelta(days=30)
+        mock_connection.updated_at = datetime.now(UTC)
+        mock_connection.linked_accounts = []
+
+        mock_result = MagicMock()
+        mock_scalars = MagicMock()
+        mock_scalars.all.return_value = [mock_connection]
+        mock_result.scalars.return_value = mock_scalars
+        mock_db.execute.return_value = mock_result
+        mock_db.commit = AsyncMock()
+        mock_db.refresh = AsyncMock()
+
+        result = await service.complete_reauth(user_id)
+
+        assert mock_connection.status == BankConnectionStatus.ACTIVE
+        assert mock_connection.status_detail is None
+        assert mock_connection.access_valid_until is not None
+        assert result.health_status == ConnectionHealthStatus.HEALTHY
+        mock_db.commit.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_complete_reauth_no_pending_connection(self) -> None:
+        """Test complete reauth when no pending reauth connection exists."""
+        mock_db = AsyncMock()
+        mock_adapter = MockBankAdapter()
+        service = BankConnectionService(mock_db, mock_adapter)
+
+        user_id = uuid4()
+
+        mock_result = MagicMock()
+        mock_scalars = MagicMock()
+        mock_scalars.all.return_value = []
+        mock_result.scalars.return_value = mock_scalars
+        mock_db.execute.return_value = mock_result
+
+        with pytest.raises(ValueError, match="No pending re-auth connection found"):
+            await service.complete_reauth(user_id)

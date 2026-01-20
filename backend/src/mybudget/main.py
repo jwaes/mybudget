@@ -21,6 +21,7 @@ from mybudget.api import (
     csv_import,
     health,
     reconciliation,
+    sync,
     targets,
     transactions,
 )
@@ -174,4 +175,9 @@ app.include_router(
     bank_connections.institutions_router,
     prefix=f"{settings.API_V1_PREFIX}/institutions",
     tags=["Institutions"],
+)
+app.include_router(
+    sync.router,
+    prefix=settings.API_V1_PREFIX,
+    tags=["Sync"],
 )
