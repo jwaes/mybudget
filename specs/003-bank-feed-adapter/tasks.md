@@ -113,21 +113,21 @@
 
 ### Sync Service
 
-- [ ] T044 Create TransactionSyncService in backend/src/mybudget/services/transaction_sync_service.py
-- [ ] T045 [US2] Implement sync_account() - fetches and imports transactions for one linked account
-- [ ] T046 [US2] Implement _deduplicate_transactions() - detects duplicates by external_id or fuzzy match
-- [ ] T047 [US2] Implement _create_transactions() - creates inbox transactions from provider data
-- [ ] T048 [US2] Implement _update_sync_job() - tracks sync progress
-- [ ] T049 [US5] Implement trigger_manual_sync() - starts sync job for connection
-- [ ] T050 Implement get_sync_jobs() - returns sync history for connection
-- [ ] T051 Test: Write unit tests in backend/tests/unit/test_services/test_transaction_sync_service.py
+- [x] T044 Create TransactionSyncService in backend/src/mybudget/services/transaction_sync_service.py
+- [x] T045 [US2] Implement sync_account() - fetches and imports transactions for one linked account
+- [x] T046 [US2] Implement _is_duplicate() - detects duplicates by external_id or fuzzy match
+- [x] T047 [US2] Implement _create_transaction() - creates inbox transactions from provider data
+- [x] T048 [US2] Implement sync job tracking - tracks sync progress
+- [x] T049 [US5] Implement trigger_manual_sync() - starts sync job for connection
+- [x] T050 Implement get_sync_jobs() - returns sync history for connection
+- [x] T051 Test: Write unit tests in backend/tests/unit/test_services/test_transaction_sync_service.py (25 tests)
 
 ### Sync API Endpoints
 
-- [ ] T052 [US5] POST /api/v1/connections/{id}/sync endpoint (trigger manual sync)
-- [ ] T053 GET /api/v1/sync-jobs endpoint (list sync jobs)
-- [ ] T054 GET /api/v1/sync-jobs/{id} endpoint (get sync job details)
-- [ ] T055 Test: Write contract tests in backend/tests/contract/test_sync_api.py
+- [x] T052 [US5] POST /api/connections/{id}/sync endpoint (trigger manual sync)
+- [x] T053 GET /api/sync-jobs endpoint (list sync jobs)
+- [x] T054 GET /api/sync-jobs/{id} endpoint (get sync job details)
+- [x] T055 Test: Write contract tests in backend/tests/contract/test_sync_api.py (16 tests)
 
 **Checkpoint**: Manual transaction sync working
 
@@ -159,17 +159,17 @@
 
 ### Health Monitoring
 
-- [ ] T065 [US3] Implement check_connection_health() in BankConnectionService
-- [ ] T066 [US4] Implement detect_expiring_tokens() - finds connections needing re-auth
-- [ ] T067 [US4] Implement initiate_reauth() - starts re-authentication flow
-- [ ] T068 [US3] Add connection_health field to BankConnection response
-- [ ] T069 Test: Write unit tests for health monitoring
+- [x] T065 [US3] Implement check_connection_health() in BankConnectionService
+- [x] T066 [US4] Implement detect_expiring_tokens() - finds connections needing re-auth
+- [x] T067 [US4] Implement initiate_reauth() - starts re-authentication flow
+- [x] T068 [US3] Add ConnectionHealthStatus enum and health_status field to response
+- [x] T069 Test: Write unit tests for health monitoring (17 new tests)
 
 ### Status API
 
-- [ ] T070 [US3] Add health_status to GET /api/v1/connections response
-- [ ] T071 [US4] POST /api/v1/connections/{id}/reauth endpoint
-- [ ] T072 Test: Write contract tests for re-auth flow
+- [x] T070 [US3] Add health_status to GET /api/connections response
+- [x] T071 [US4] POST /api/connections/{id}/reauth endpoint
+- [x] T072 Test: Write contract tests for re-auth flow (10 new tests)
 
 **Checkpoint**: Connection health monitoring complete
 
