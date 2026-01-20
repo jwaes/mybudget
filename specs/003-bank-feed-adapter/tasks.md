@@ -82,26 +82,26 @@
 
 ### Service Layer
 
-- [ ] T027 Create BankConnectionService in backend/src/mybudget/services/bank_connection_service.py
-- [ ] T028 [US1] Implement initiate_connection() - creates requisition and returns redirect URL
-- [ ] T029 [US1] Implement complete_oauth() - handles callback and activates connection
-- [ ] T030 [US1] Implement list_connections() - returns user's bank connections
-- [ ] T031 [US1] Implement get_connection() - returns connection with linked accounts
-- [ ] T032 [US7] Implement disconnect() - revokes access and marks disconnected
-- [ ] T033 Implement get_institutions() - searches available banks
-- [ ] T034 Test: Write unit tests in backend/tests/unit/test_services/test_bank_connection_service.py
+- [x] T027 Create BankConnectionService in backend/src/mybudget/services/bank_connection_service.py
+- [x] T028 [US1] Implement initiate_connection() - creates requisition and returns redirect URL
+- [x] T029 [US1] Implement complete_oauth() - handles callback and activates connection
+- [x] T030 [US1] Implement list_connections() - returns user's bank connections
+- [x] T031 [US1] Implement get_connection() - returns connection with linked accounts
+- [x] T032 [US7] Implement disconnect() - revokes access and marks disconnected
+- [x] T033 Implement get_institutions() - searches available banks
+- [x] T034 Test: Write unit tests in backend/tests/unit/test_services/test_bank_connection_service.py (24 tests)
 
 ### API Endpoints
 
-- [ ] T035 Create bank connections router in backend/src/mybudget/api/bank_connections.py
-- [ ] T036 [US1] POST /api/v1/connections/initiate endpoint
-- [ ] T037 [US1] GET /api/v1/connections/callback endpoint (OAuth callback)
-- [ ] T038 [US1] GET /api/v1/connections endpoint (list connections)
-- [ ] T039 [US1] GET /api/v1/connections/{id} endpoint (get connection details)
-- [ ] T040 [US7] DELETE /api/v1/connections/{id} endpoint (disconnect)
-- [ ] T041 GET /api/v1/institutions endpoint (search banks)
-- [ ] T042 Register router in backend/src/mybudget/main.py
-- [ ] T043 Test: Write contract tests in backend/tests/contract/test_bank_connections_api.py
+- [x] T035 Create bank connections router in backend/src/mybudget/api/bank_connections.py
+- [x] T036 [US1] POST /api/connections/initiate endpoint
+- [x] T037 [US1] GET /api/connections/callback endpoint (OAuth callback)
+- [x] T038 [US1] GET /api/connections endpoint (list connections)
+- [x] T039 [US1] GET /api/connections/{id} endpoint (get connection details)
+- [x] T040 [US7] DELETE /api/connections/{id} endpoint (disconnect)
+- [x] T041 GET /api/institutions endpoint (search banks)
+- [x] T042 Register router in backend/src/mybudget/main.py
+- [x] T043 Test: Write contract tests in backend/tests/contract/test_bank_connections_api.py (22 tests)
 
 **Checkpoint**: Bank connection OAuth flow functional
 
