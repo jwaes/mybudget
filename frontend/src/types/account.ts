@@ -2,6 +2,8 @@
  * Account types for MyBudget.
  */
 
+import type { ConnectionHealthStatus } from './bankConnection'
+
 export type AccountType = 'CHECKING' | 'SAVINGS'
 
 export type SyncStatus = 'SUCCESS' | 'FAILED' | 'PENDING' | 'NEVER_SYNCED'
@@ -18,6 +20,10 @@ export interface Account {
   sync_error: string | null
   created_at: string
   updated_at: string
+  // Bank connection fields (present for linked accounts)
+  bank_connection_id?: string | null
+  bank_connection_name?: string | null
+  bank_connection_health?: ConnectionHealthStatus | null
 }
 
 export interface AccountCreate {

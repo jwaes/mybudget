@@ -14,6 +14,7 @@ import { RegisterPage } from '@/pages/Register'
 import { AccountsPage } from '@/pages/Accounts'
 import { TransactionsPage } from '@/pages/Transactions'
 import { BudgetPage } from '@/pages/Budget'
+import { BankCallbackPage } from '@/pages/BankCallback'
 import { NotFound } from '@/pages/NotFound'
 
 /**
@@ -72,6 +73,17 @@ export default function App() {
             <PublicRoute>
               <RegisterPage />
             </PublicRoute>
+          }
+        />
+
+        {/* Bank OAuth callback - needs to work with or without auth since
+            the user is redirected back from the bank's site */}
+        <Route
+          path="/bank-callback"
+          element={
+            <ProtectedRoute>
+              <BankCallbackPage />
+            </ProtectedRoute>
           }
         />
 

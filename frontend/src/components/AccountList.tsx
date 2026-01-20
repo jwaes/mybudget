@@ -2,12 +2,14 @@
  * AccountList component.
  *
  * Displays a list of accounts with their balances and sync status.
+ * Accounts linked to bank connections are grouped by bank.
  */
 
-import { useEffect, useState } from 'react'
-import { CheckCircle, XCircle, Clock, Minus, RefreshCw } from 'lucide-react'
+import React, { useEffect, useState, useMemo } from 'react'
+import { CheckCircle, XCircle, Clock, Minus, RefreshCw, Building2 } from 'lucide-react'
 import { accountService } from '@/services/accountService'
 import { ReconcileModal } from './ReconcileModal'
+import { ConnectionStatusBadge } from './ConnectionStatusBadge'
 import type { Account } from '@/types/account'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -87,13 +89,42 @@ export function AccountList({ onAccountSelect, onReconcileComplete }: AccountLis
       setRetryingAccountId(accountId)
       await accountService.retrySync(accountId)
       await loadAccounts()
-    } catch (err) {
+    } catch {
       // Error will be reflected in the account's sync_error after reload
       await loadAccounts()
     } finally {
       setRetryingAccountId(null)
     }
   }
+
+  // Group accounts by bank connection - must be called before early returns (hooks rules)
+  const groupedAccounts = useMemo(() => {
+    const groups: Map<string | null, { name: string | null; health: Account['bank_connection_health']; accounts: Account[] }> = new Map()
+
+    for (const account of accounts) {
+      const connectionId = account.bank_connection_id || null
+      if (!groups.has(connectionId)) {
+        groups.set(connectionId, {
+          name: account.bank_connection_name || null,
+          health: account.bank_connection_health || null,
+          accounts: [],
+        })
+      }
+      groups.get(connectionId)!.accounts.push(account)
+    }
+
+    // Sort: manual accounts (null connection) first, then by bank name
+    return Array.from(groups.entries()).sort(([aId, aGroup], [bId, bGroup]) => {
+      if (aId === null) return -1
+      if (bId === null) return 1
+      return (aGroup.name || '').localeCompare(bGroup.name || '')
+    })
+  }, [accounts])
+
+  const totalBalance = useMemo(
+    () => accounts.reduce((sum, acc) => sum + parseFloat(acc.balance), 0),
+    [accounts]
+  )
 
   function renderSyncStatus(account: Account) {
     const status = account.sync_status
@@ -193,7 +224,48 @@ export function AccountList({ onAccountSelect, onReconcileComplete }: AccountLis
     )
   }
 
-  const totalBalance = accounts.reduce((sum, acc) => sum + parseFloat(acc.balance), 0)
+  function renderAccountRow(account: Account) {
+    return (
+      <TableRow
+        key={account.id}
+        className={onAccountSelect ? 'cursor-pointer hover:bg-muted/50' : ''}
+        onClick={() => onAccountSelect?.(account)}
+      >
+        <TableCell className="font-medium">
+          <div className="flex items-center gap-2">
+            {account.name}
+            {account.bank_connection_health && (
+              <ConnectionStatusBadge
+                status={account.bank_connection_health}
+                lastSyncAt={account.last_sync_at}
+                className="ml-2"
+              />
+            )}
+          </div>
+        </TableCell>
+        <TableCell className="text-muted-foreground">
+          {getAccountTypeLabel(account.account_type)}
+        </TableCell>
+        <TableCell>{renderSyncStatus(account)}</TableCell>
+        <TableCell className="text-right tabular-nums">
+          {formatCurrency(account.balance)}
+        </TableCell>
+        <TableCell>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation()
+              setReconcileAccount(account)
+            }}
+            aria-label={`Reconcile ${account.name}`}
+          >
+            Reconcile
+          </Button>
+        </TableCell>
+      </TableRow>
+    )
+  }
 
   return (
     <Card>
@@ -208,34 +280,29 @@ export function AccountList({ onAccountSelect, onReconcileComplete }: AccountLis
           </TableRow>
         </TableHeader>
         <TableBody>
-          {accounts.map((account) => (
-            <TableRow
-              key={account.id}
-              className={onAccountSelect ? 'cursor-pointer hover:bg-muted/50' : ''}
-              onClick={() => onAccountSelect?.(account)}
-            >
-              <TableCell className="font-medium">{account.name}</TableCell>
-              <TableCell className="text-muted-foreground">
-                {getAccountTypeLabel(account.account_type)}
-              </TableCell>
-              <TableCell>{renderSyncStatus(account)}</TableCell>
-              <TableCell className="text-right tabular-nums">
-                {formatCurrency(account.balance)}
-              </TableCell>
-              <TableCell>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setReconcileAccount(account)
-                  }}
-                  aria-label={`Reconcile ${account.name}`}
-                >
-                  Reconcile
-                </Button>
-              </TableCell>
-            </TableRow>
+          {groupedAccounts.map(([connectionId, group]) => (
+            connectionId === null ? (
+              // Manual accounts - render directly
+              group.accounts.map((account) => renderAccountRow(account))
+            ) : (
+              // Bank connection group - render with header
+              <React.Fragment key={connectionId}>
+                <TableRow className="bg-muted/30 hover:bg-muted/30">
+                  <TableCell colSpan={5} className="py-2">
+                    <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                      <Building2 className="h-4 w-4" />
+                      <span>{group.name}</span>
+                      {group.health && (
+                        <ConnectionStatusBadge
+                          status={group.health}
+                        />
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+                {group.accounts.map((account) => renderAccountRow(account))}
+              </React.Fragment>
+            )
           ))}
         </TableBody>
         <TableFooter>

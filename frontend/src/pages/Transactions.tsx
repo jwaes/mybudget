@@ -5,8 +5,9 @@
  */
 
 import { useState, useEffect, useCallback } from 'react'
+import { Upload } from 'lucide-react'
 import { TransactionInbox } from '@/components/TransactionInbox'
-import { CSVImport } from '@/components/CSVImport'
+import { CSVImportDialog } from '@/components/CSVImportDialog'
 import { AddTransactionModal } from '@/components/AddTransactionModal'
 import { TransactionSearch } from '@/components/TransactionSearch'
 import { TransactionFilters, type TransactionFiltersState } from '@/components/TransactionFilters'
@@ -46,6 +47,7 @@ export function TransactionsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [filters, setFilters] = useState<TransactionFiltersState>({})
   const [categories, setCategories] = useState<Array<{ id: string; name: string }>>([])
@@ -156,9 +158,10 @@ export function TransactionsPage() {
         <h1 className="text-2xl font-bold text-foreground">Transactions</h1>
         <div className="flex items-center gap-3">
           <Button onClick={() => setIsAddModalOpen(true)}>+ Add Transaction</Button>
-          {selectedAccountId && (
-            <CSVImport accountId={selectedAccountId} onImportComplete={loadData} />
-          )}
+          <Button variant="outline" onClick={() => setIsImportDialogOpen(true)}>
+            <Upload className="h-4 w-4 mr-2" />
+            Import CSV
+          </Button>
         </div>
       </div>
 
@@ -289,6 +292,14 @@ export function TransactionsPage() {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onTransactionAdded={loadData}
+        preselectedAccountId={selectedAccountId}
+      />
+
+      <CSVImportDialog
+        isOpen={isImportDialogOpen}
+        onClose={() => setIsImportDialogOpen(false)}
+        onImportComplete={() => loadData()}
+        accounts={accounts}
         preselectedAccountId={selectedAccountId}
       />
     </div>
