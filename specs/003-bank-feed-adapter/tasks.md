@@ -210,16 +210,16 @@
 
 ### Bank Connection Components
 
-- [ ] T088 Create bankConnectionService in frontend/src/services/bankConnectionService.ts
-- [ ] T089 Create types in frontend/src/types/bankConnection.ts
-- [ ] T090 [US1] Create BankSearchDialog component in frontend/src/components/BankSearchDialog.tsx
-- [ ] T091 [US1] Create BankConnectionCallback page for OAuth redirect in frontend/src/pages/BankCallback.tsx
-- [ ] T092 [US3] Create ConnectionStatusBadge component in frontend/src/components/ConnectionStatusBadge.tsx
-- [ ] T093 [US3] Update AccountList to show connection status and sync info
-- [ ] T094 [US4] Create ReconnectPrompt component in frontend/src/components/ReconnectPrompt.tsx
-- [ ] T095 [US7] Add disconnect confirmation dialog
-- [ ] T096 Add route for callback page in frontend/src/App.tsx
-- [ ] T097 Test: Write component tests in frontend/tests/components/
+- [x] T088 Create bankConnectionService in frontend/src/services/bankConnectionService.ts
+- [x] T089 Create types in frontend/src/types/bankConnection.ts
+- [x] T090 [US1] Create BankSearchDialog component in frontend/src/components/BankSearchDialog.tsx (17 tests)
+- [x] T091 [US1] Create BankConnectionCallback page for OAuth redirect in frontend/src/pages/BankCallback.tsx
+- [x] T092 [US3] Create ConnectionStatusBadge component in frontend/src/components/ConnectionStatusBadge.tsx (17 tests)
+- [x] T093 [US3] Update AccountList to show connection status and sync info
+- [x] T094 [US4] Create ReconnectPrompt component in frontend/src/components/ReconnectPrompt.tsx (13 tests)
+- [x] T095 [US7] Add disconnect confirmation dialog (DisconnectConfirmDialog.tsx)
+- [x] T096 Add route for callback page in frontend/src/App.tsx
+- [x] T097 Test: Write component tests in frontend/tests/components/ (47 tests total)
 
 **Checkpoint**: Bank connection UI complete
 
@@ -231,18 +231,18 @@
 
 ### Sync Controls
 
-- [ ] T098 [US5] Add "Sync Now" button to AccountList
-- [ ] T099 [US5] Create SyncStatusIndicator component
-- [ ] T100 [US5] Show sync progress and results
+- [x] T098 [US5] Add "Sync Now" button to AccountList (via BankConnectionsSyncPanel)
+- [x] T099 [US5] Create SyncStatusIndicator component
+- [x] T100 [US5] Show sync progress and results (BankConnectionsSyncPanel with polling)
 
 ### CSV Import
 
-- [ ] T101 Create csvImportService in frontend/src/services/csvImportService.ts
-- [ ] T102 [US6] Create CSVImportDialog component in frontend/src/components/CSVImportDialog.tsx
-- [ ] T103 [US6] Create ColumnMappingForm component in frontend/src/components/ColumnMappingForm.tsx
-- [ ] T104 [US6] Create ImportPreviewTable component in frontend/src/components/ImportPreviewTable.tsx
-- [ ] T105 [US6] Add "Import CSV" button to Transactions page
-- [ ] T106 Test: Write component tests for CSV import
+- [x] T101 Create csvImportService in frontend/src/services/csvImportService.ts
+- [x] T102 [US6] Create CSVImportDialog component in frontend/src/components/CSVImportDialog.tsx (11 tests)
+- [x] T103 [US6] Create ColumnMappingForm component in frontend/src/components/ColumnMappingForm.tsx (8 tests)
+- [x] T104 [US6] Create ImportPreviewTable component in frontend/src/components/ImportPreviewTable.tsx (15 tests)
+- [x] T105 [US6] Add "Import CSV" button to Transactions page
+- [x] T106 Test: Write component tests for CSV import (34 tests total)
 
 **Checkpoint**: Sync and import UI complete
 
