@@ -6,6 +6,7 @@ This document provides comprehensive instructions for deploying the MyBudget app
 
 - [Prerequisites](#prerequisites)
 - [Environment Variables](#environment-variables)
+- [Bank Feed Configuration (GoCardless)](#bank-feed-configuration-gocardless)
 - [Local Development Setup](#local-development-setup)
 - [Production Deployment](#production-deployment)
 - [Docker Deployment](#docker-deployment)
@@ -69,6 +70,107 @@ cp backend/.env.example backend/.env
   ```
 - **DEBUG**: Always set to `false` in production to prevent sensitive error details from being exposed.
 - **DATABASE_URL**: Use strong passwords and consider SSL connections for production databases.
+
+---
+
+## Bank Feed Configuration (GoCardless)
+
+MyBudget supports automatic bank transaction syncing via GoCardless Bank Account Data API (formerly Nordigen). This enables PSD2-compliant Open Banking connections across 2,400+ European banks.
+
+### Getting GoCardless Credentials
+
+1. **Sign up** at [GoCardless Bank Account Data](https://bankaccountdata.gocardless.com/)
+2. **Create an application** in the GoCardless dashboard
+3. **Copy credentials**: Secret ID and Secret Key
+
+### Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `GOCARDLESS_SECRET_ID` | Yes* | Your GoCardless API Secret ID |
+| `GOCARDLESS_SECRET_KEY` | Yes* | Your GoCardless API Secret Key |
+| `GOCARDLESS_BASE_URL` | No | API base URL (default: `https://bankaccountdata.gocardless.com/api/v2`) |
+| `BANK_TOKEN_ENCRYPTION_KEY` | Yes* | Fernet key for encrypting bank tokens |
+| `BANK_SYNC_INTERVAL_HOURS` | No | Hours between automatic syncs (default: `6`) |
+| `BANK_SYNC_CHECK_INTERVAL_MINUTES` | No | Minutes between sync job checks (default: `5`) |
+| `BANK_SYNC_MAX_RETRIES` | No | Max retries for failed syncs (default: `3`) |
+
+*Required only if using GoCardless. Without these, the mock adapter is used for testing.
+
+### Generate Encryption Key
+
+The bank token encryption key must be a valid Fernet key:
+
+```bash
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+```
+
+### Example Configuration
+
+Add to your `.env` file:
+
+```bash
+# GoCardless Bank Account Data API
+GOCARDLESS_SECRET_ID=your_secret_id_here
+GOCARDLESS_SECRET_KEY=your_secret_key_here
+GOCARDLESS_BASE_URL=https://bankaccountdata.gocardless.com/api/v2
+
+# Bank sync settings
+BANK_TOKEN_ENCRYPTION_KEY=your_fernet_key_here
+BANK_SYNC_INTERVAL_HOURS=6
+BANK_SYNC_CHECK_INTERVAL_MINUTES=5
+BANK_SYNC_MAX_RETRIES=3
+```
+
+### OAuth Callback URL
+
+Configure the OAuth callback URL in your GoCardless dashboard:
+
+- **Development**: `http://localhost:5173/bank-callback`
+- **Production**: `https://your-domain.com/bank-callback`
+
+### Supported Countries
+
+GoCardless supports banks in 31 European countries including:
+- Belgium (BE), Netherlands (NL), Germany (DE), France (FR)
+- United Kingdom (GB), Ireland (IE), Spain (ES), Italy (IT)
+- And many more...
+
+Use the `GET /api/institutions?country=BE` endpoint to list available banks by country.
+
+### Mock Adapter (Development)
+
+When GoCardless credentials are not configured, the application automatically uses a mock adapter with test banks:
+- Demo Bank (GB)
+- Test Bank (NL)
+- Sample Credit Union (US)
+
+This allows development and testing without real bank connections.
+
+### Automatic Sync Scheduling
+
+The application runs a background scheduler (APScheduler) that:
+1. Checks for due sync jobs every `BANK_SYNC_CHECK_INTERVAL_MINUTES` minutes
+2. Syncs active connections every `BANK_SYNC_INTERVAL_HOURS` hours
+3. Retries failed syncs with exponential backoff (5min, 15min, 1hr)
+4. Marks connections as `NEEDS_ATTENTION` after max retries exceeded
+
+### Connection Health Monitoring
+
+Bank connections have health statuses:
+- **HEALTHY**: Active and syncing normally
+- **WARNING**: Token expiring within 7 days or sync stale >24 hours
+- **ERROR**: Token expired, connection failed, or disconnected
+
+Users receive prompts to re-authenticate expiring connections.
+
+### CSV Import (Fallback)
+
+For banks not supported by GoCardless, users can manually import transactions via CSV:
+- `POST /api/import/csv/preview` - Preview import with duplicate detection
+- `POST /api/import/csv` - Execute import
+
+Supported formats: comma, semicolon, or tab delimited with configurable column mappings.
 
 ---
 
@@ -655,3 +757,12 @@ Before deploying to production:
 - [ ] Review and restrict CORS origins
 - [ ] Set up log rotation
 - [ ] Configure automated backups
+
+### Bank Feed Security
+
+- [ ] Generate a secure `BANK_TOKEN_ENCRYPTION_KEY` with Fernet
+- [ ] Store GoCardless credentials securely (environment variables, not in code)
+- [ ] Configure OAuth callback URL in GoCardless dashboard
+- [ ] Review bank connection permissions and scopes
+- [ ] Monitor for expired/failing connections
+- [ ] Implement alerts for sync failures
