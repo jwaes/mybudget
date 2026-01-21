@@ -5,7 +5,9 @@
  */
 
 import { useState } from 'react'
+import { Building2 } from 'lucide-react'
 import { AccountList } from '@/components/AccountList'
+import { BankSearchDialog } from '@/components/BankSearchDialog'
 import { accountService } from '@/services/accountService'
 import type { AccountType } from '@/types/account'
 import { Button } from '@/components/ui/button'
@@ -22,6 +24,7 @@ import {
 
 export function AccountsPage() {
   const [isCreating, setIsCreating] = useState(false)
+  const [isBankSearchOpen, setIsBankSearchOpen] = useState(false)
   const [name, setName] = useState('')
   const [accountType, setAccountType] = useState<AccountType>('CHECKING')
   const [initialBalance, setInitialBalance] = useState('')
@@ -65,9 +68,15 @@ export function AccountsPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-foreground">Accounts</h1>
         {!isCreating && (
-          <Button onClick={() => setIsCreating(true)}>
-            + New Account
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setIsBankSearchOpen(true)}>
+              <Building2 className="h-4 w-4 mr-2" />
+              Connect Bank
+            </Button>
+            <Button onClick={() => setIsCreating(true)}>
+              + New Account
+            </Button>
+          </div>
         )}
       </div>
 
@@ -140,6 +149,15 @@ export function AccountsPage() {
       )}
 
       <AccountList key={refreshKey} />
+
+      <BankSearchDialog
+        open={isBankSearchOpen}
+        onOpenChange={setIsBankSearchOpen}
+        onConnectionInitiated={() => {
+          setIsBankSearchOpen(false)
+          setRefreshKey((prev) => prev + 1)
+        }}
+      />
     </div>
   )
 }

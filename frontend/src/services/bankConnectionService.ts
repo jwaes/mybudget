@@ -51,7 +51,7 @@ export const bankConnectionService = {
    * @returns List of bank connections
    */
   async listConnections(): Promise<BankConnection[]> {
-    const response = await api.get<ConnectionListResponse>('/connections')
+    const response = await api.get<ConnectionListResponse>('/connections/')
     return response.connections
   },
 
@@ -98,7 +98,7 @@ export const bankConnectionService = {
    */
   async listInstitutions(country?: string): Promise<Institution[]> {
     const params = country ? `?country=${encodeURIComponent(country)}` : ''
-    const response = await api.get<InstitutionListResponse>(`/institutions${params}`)
+    const response = await api.get<InstitutionListResponse>(`/institutions/${params}`)
     return response.institutions
   },
 }
