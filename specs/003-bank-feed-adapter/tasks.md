@@ -259,7 +259,7 @@
 - [ ] T111 Test CSV import with various file formats (manual testing)
 - [x] T112 Add error handling for network failures (implemented in components)
 - [x] T113 Add loading states to all async operations (implemented in components)
-- [ ] T114 Update DEPLOYMENT.md with GoCardless configuration
+- [x] T114 Update DEPLOYMENT.md with GoCardless configuration
 - [ ] T115 Final code review and cleanup
 
 ---
