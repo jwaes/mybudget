@@ -2,8 +2,9 @@
 
 **Feature Branch**: `003-bank-feed-adapter`
 **Created**: 2026-01-18
-**Status**: Draft
-**Input**: Bank Feed Adapter - Provider-agnostic bank connection interface. Initial provider: GoCardless Bank Account Data (Nordigen) for AIS. Features: OAuth flow for bank connections, automatic transaction sync with configurable frequency, connection health monitoring and re-authentication prompts, support for checking/savings/credit card accounts, transaction deduplication logic, CSV import as fallback method.
+**Updated**: 2026-01-21
+**Status**: In Progress
+**Input**: Bank Feed Adapter - Provider-agnostic bank connection interface. Supported providers: GoCardless Bank Account Data (Nordigen) and EnableBanking for AIS. Features: OAuth flow for bank connections, automatic transaction sync with configurable frequency, connection health monitoring and re-authentication prompts, support for checking/savings/credit card accounts, transaction deduplication logic, CSV import as fallback method. Provider selection is configurable per deployment or per connection.
 
 ---
 
@@ -191,6 +192,11 @@ Users can disconnect a bank account, which stops automatic syncing and revokes a
 - **FR-031**: System MUST use a provider-agnostic adapter interface for bank connections
 - **FR-032**: System MUST support adding new bank connection providers without changes to core transaction logic
 - **FR-033**: System MUST maintain consistent transaction data format regardless of provider
+- **FR-034**: System MUST support GoCardless Bank Account Data (Nordigen) as a provider
+- **FR-035**: System MUST support EnableBanking as an alternative provider
+- **FR-036**: System MUST allow provider selection via configuration (environment variable or per-connection setting)
+- **FR-037**: System MUST store which provider was used for each bank connection to ensure proper API calls
+- **FR-038**: System MUST handle provider-specific authentication methods (API key/secret for GoCardless, JWT with RS256 for EnableBanking)
 
 ### Key Entities
 
@@ -224,7 +230,10 @@ Users can disconnect a bank account, which stops automatic syncing and revokes a
 - Sync frequency of every 6 hours is acceptable for most users (configurable for edge cases)
 - Transaction data from banks includes at minimum: date, amount, and some form of payee/description
 - CSV import field mapping can be saved per user for repeat imports from the same source
-- Initial provider (GoCardless/Nordigen) covers major European banks; other providers can be added later
+- GoCardless and EnableBanking provide overlapping but not identical bank coverage; having both maximizes supported banks
+- EnableBanking uses JWT authentication with RS256 algorithm requiring a private key file
+- Provider selection is typically deployment-wide, but per-connection override may be needed for specific banks
+- Both providers return similar data structures that can be normalized to a common format
 
 ---
 
@@ -232,5 +241,8 @@ Users can disconnect a bank account, which stops automatic syncing and revokes a
 
 - Existing account management system (from 001-spending-targets-mvp) for linking bank accounts to user accounts
 - Existing transaction inbox system (from 001-spending-targets-mvp) for receiving imported transactions
-- External bank connection provider (GoCardless/Nordigen) API access and credentials
+- External bank connection provider API access and credentials:
+  - GoCardless Bank Account Data: Secret ID and Secret Key
+  - EnableBanking: Application ID and RS256 private key file
 - Background job scheduler for automatic sync operations
+- PyJWT library for EnableBanking JWT token generation
