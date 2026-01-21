@@ -264,6 +264,46 @@
 
 ---
 
+## Phase 11: EnableBanking Integration
+
+**Purpose**: Add EnableBanking as alternative bank connection provider
+
+### Configuration & Setup
+
+- [ ] T116 Add EnableBanking configuration to backend/src/mybudget/config.py (ENABLEBANKING_APP_ID, ENABLEBANKING_PRIVATE_KEY_PATH, ENABLEBANKING_BASE_URL, BANK_PROVIDER)
+- [ ] T117 Install PyJWT dependency for RS256 token generation
+
+### EnableBanking Adapter
+
+- [ ] T118 Create EnableBankingAdapter in backend/src/mybudget/adapters/enablebanking_adapter.py implementing BankProviderAdapter
+- [ ] T119 [P] Implement _generate_jwt() - creates RS256 signed JWT with app_id as kid
+- [ ] T120 [P] Implement _make_request() - HTTP client with JWT auth header
+- [ ] T121 Implement get_institutions() - GET /aspsps with country filter
+- [ ] T122 Implement create_requisition() - POST /auth to start OAuth flow
+- [ ] T123 Implement get_requisition() - check authorization status
+- [ ] T124 Implement complete_authorization() - POST /sessions to exchange code for session
+- [ ] T125 Implement get_accounts() - extract accounts from session response
+- [ ] T126 Implement get_transactions() - GET /accounts/{id}/transactions with date filters
+- [ ] T127 Implement refresh_access() - handle session refresh if supported
+- [ ] T128 Implement revoke_access() - revoke session access
+- [ ] T129 Test: Write unit tests with mocked HTTP in backend/tests/unit/test_adapters/test_enablebanking_adapter.py
+
+### Provider Selection
+
+- [ ] T130 Create get_bank_adapter() factory function in backend/src/mybudget/adapters/__init__.py
+- [ ] T131 Update BankConnectionService to use adapter factory based on provider config
+- [ ] T132 Store provider name in BankConnection model on creation
+- [ ] T133 Test: Write unit tests for provider selection logic
+
+### Documentation
+
+- [ ] T134 Update DEPLOYMENT.md with EnableBanking configuration section
+- [ ] T135 Add EnableBanking environment variables to .env.example
+
+**Checkpoint**: EnableBanking adapter functional, provider selection working
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies
@@ -278,12 +318,15 @@
 - **Phase 8**: Depends on Phases 3, 6 (backend APIs)
 - **Phase 9**: Depends on Phases 4, 5, 7 (backend APIs)
 - **Phase 10**: Depends on all phases
+- **Phase 11**: Depends on Phase 1 (adapter interface) - can run parallel to other phases
 
 ### Parallel Opportunities
 
 - T002-T004 can run in parallel (different models)
 - T007-T009 can run in parallel (different schemas)
 - Phase 7 (CSV) can run parallel to Phases 4-6 after Phase 1
+- Phase 11 (EnableBanking) can run parallel after Phase 1 is complete
+- T119-T120 can run in parallel (JWT generation and HTTP client)
 
 ---
 
@@ -292,9 +335,20 @@
 Required environment variables:
 
 ```bash
+# GoCardless (optional - use if BANK_PROVIDER=gocardless)
 GOCARDLESS_SECRET_ID=your_secret_id
 GOCARDLESS_SECRET_KEY=your_secret_key
 GOCARDLESS_BASE_URL=https://bankaccountdata.gocardless.com/api/v2
+
+# EnableBanking (optional - use if BANK_PROVIDER=enablebanking)
+ENABLEBANKING_APP_ID=your_application_id
+ENABLEBANKING_PRIVATE_KEY_PATH=/path/to/private_key.pem
+ENABLEBANKING_BASE_URL=https://api.enablebanking.com
+
+# Provider selection
+BANK_PROVIDER=gocardless  # or enablebanking
+
+# Common settings
 BANK_SYNC_INTERVAL_HOURS=6
 BANK_TOKEN_ENCRYPTION_KEY=your_fernet_key
 ```
@@ -303,4 +357,11 @@ Generate Fernet key:
 ```python
 from cryptography.fernet import Fernet
 print(Fernet.generate_key().decode())
+```
+
+Generate RS256 key pair for EnableBanking:
+```bash
+openssl genrsa -out private_key.pem 2048
+openssl rsa -in private_key.pem -pubout -out public_key.pem
+# Upload public_key.pem to EnableBanking dashboard
 ```
