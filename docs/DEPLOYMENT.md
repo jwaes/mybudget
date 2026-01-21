@@ -7,6 +7,8 @@ This document provides comprehensive instructions for deploying the MyBudget app
 - [Prerequisites](#prerequisites)
 - [Environment Variables](#environment-variables)
 - [Bank Feed Configuration (GoCardless)](#bank-feed-configuration-gocardless)
+- [Bank Feed Configuration (EnableBanking)](#bank-feed-configuration-enablebanking)
+- [Provider Selection](#provider-selection)
 - [Local Development Setup](#local-development-setup)
 - [Production Deployment](#production-deployment)
 - [Docker Deployment](#docker-deployment)
@@ -171,6 +173,104 @@ For banks not supported by GoCardless, users can manually import transactions vi
 - `POST /api/import/csv` - Execute import
 
 Supported formats: comma, semicolon, or tab delimited with configurable column mappings.
+
+---
+
+## Bank Feed Configuration (EnableBanking)
+
+EnableBanking is an alternative PSD2-compliant bank connection provider supporting 2,000+ European banks. It uses JWT authentication with RS256 algorithm.
+
+### Getting EnableBanking Credentials
+
+1. **Sign up** at [EnableBanking](https://enablebanking.com/)
+2. **Generate an RS256 key pair**:
+   ```bash
+   # Generate private key
+   openssl genrsa -out private_key.pem 2048
+
+   # Extract public key
+   openssl rsa -in private_key.pem -pubout -out public_key.pem
+   ```
+3. **Upload public key** to the EnableBanking dashboard
+4. **Copy your Application ID** from the dashboard
+
+### Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `ENABLEBANKING_APP_ID` | Yes* | Your EnableBanking Application ID |
+| `ENABLEBANKING_PRIVATE_KEY_PATH` | Yes* | Path to your RS256 private key file |
+| `ENABLEBANKING_BASE_URL` | No | API base URL (default: `https://api.enablebanking.com`) |
+| `BANK_TOKEN_ENCRYPTION_KEY` | Yes* | Fernet key for encrypting bank tokens |
+
+*Required only if using EnableBanking as the bank provider.
+
+### Example Configuration
+
+Add to your `.env` file:
+
+```bash
+# EnableBanking API
+ENABLEBANKING_APP_ID=your_application_id_here
+ENABLEBANKING_PRIVATE_KEY_PATH=/path/to/private_key.pem
+ENABLEBANKING_BASE_URL=https://api.enablebanking.com
+
+# Bank sync settings (shared with GoCardless)
+BANK_TOKEN_ENCRYPTION_KEY=your_fernet_key_here
+BANK_SYNC_INTERVAL_HOURS=6
+```
+
+### Private Key Security
+
+- **Keep your private key secure**: Never commit it to version control
+- **File permissions**: Set restrictive permissions (`chmod 600 private_key.pem`)
+- **Production**: Store the key securely (e.g., mounted secret in Kubernetes)
+
+### Supported Countries
+
+EnableBanking supports banks across Europe including:
+- Finland (FI), Sweden (SE), Norway (NO), Denmark (DK)
+- Germany (DE), Netherlands (NL), Belgium (BE)
+- And many more...
+
+Use the `GET /api/institutions?country=FI` endpoint to list available banks.
+
+---
+
+## Provider Selection
+
+MyBudget supports multiple bank connection providers. Configure which provider to use via environment variable.
+
+### Configuration
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `BANK_PROVIDER` | `mock` | Provider to use: `gocardless`, `enablebanking`, or `mock` |
+
+### Provider Comparison
+
+| Feature | GoCardless | EnableBanking |
+|---------|-----------|---------------|
+| Authentication | API Key/Secret | JWT RS256 |
+| Coverage | 2,400+ banks | 2,000+ banks |
+| Regions | 31 European countries | European countries |
+| Free Tier | 50 connections/month | Varies |
+
+### Choosing a Provider
+
+- **GoCardless**: Better for quick setup with API key/secret authentication
+- **EnableBanking**: Better for environments preferring JWT-based auth
+- **Mock**: For development and testing without real bank connections
+
+### Switching Providers
+
+To switch providers:
+
+1. Update `BANK_PROVIDER` environment variable
+2. Add the required credentials for the new provider
+3. Restart the application
+
+**Note**: Existing connections remain linked to their original provider. Only new connections use the configured provider.
 
 ---
 

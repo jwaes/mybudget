@@ -41,6 +41,7 @@ dependencies = [
     # Bank Feed Integration
     "httpx>=0.26.0",
     "cryptography>=42.0.0",
+    "PyJWT>=2.8.0",
     # Background task scheduling
     "apscheduler>=3.10.0",
 ]

@@ -69,6 +69,26 @@ class Settings(BaseSettings):
         description="GoCardless Bank Account Data API base URL",
     )
 
+    # EnableBanking API
+    ENABLEBANKING_APP_ID: str | None = Field(
+        default=None,
+        description="EnableBanking application ID (used as kid in JWT header)",
+    )
+    ENABLEBANKING_PRIVATE_KEY_PATH: str | None = Field(
+        default=None,
+        description="Path to RS256 private key file for EnableBanking JWT signing",
+    )
+    ENABLEBANKING_BASE_URL: str = Field(
+        default="https://api.enablebanking.com",
+        description="EnableBanking API base URL",
+    )
+
+    # Bank Provider Selection
+    BANK_PROVIDER: str = Field(
+        default="mock",
+        description="Bank provider to use: 'gocardless', 'enablebanking', or 'mock'",
+    )
+
     # Bank Token Encryption
     BANK_TOKEN_ENCRYPTION_KEY: str | None = Field(
         default=None,

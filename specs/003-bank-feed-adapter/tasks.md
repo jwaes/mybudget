@@ -270,35 +270,35 @@
 
 ### Configuration & Setup
 
-- [ ] T116 Add EnableBanking configuration to backend/src/mybudget/config.py (ENABLEBANKING_APP_ID, ENABLEBANKING_PRIVATE_KEY_PATH, ENABLEBANKING_BASE_URL, BANK_PROVIDER)
-- [ ] T117 Install PyJWT dependency for RS256 token generation
+- [x] T116 Add EnableBanking configuration to backend/src/mybudget/config.py (ENABLEBANKING_APP_ID, ENABLEBANKING_PRIVATE_KEY_PATH, ENABLEBANKING_BASE_URL, BANK_PROVIDER)
+- [x] T117 Install PyJWT dependency for RS256 token generation
 
 ### EnableBanking Adapter
 
-- [ ] T118 Create EnableBankingAdapter in backend/src/mybudget/adapters/enablebanking_adapter.py implementing BankProviderAdapter
-- [ ] T119 [P] Implement _generate_jwt() - creates RS256 signed JWT with app_id as kid
-- [ ] T120 [P] Implement _make_request() - HTTP client with JWT auth header
-- [ ] T121 Implement get_institutions() - GET /aspsps with country filter
-- [ ] T122 Implement create_requisition() - POST /auth to start OAuth flow
-- [ ] T123 Implement get_requisition() - check authorization status
-- [ ] T124 Implement complete_authorization() - POST /sessions to exchange code for session
-- [ ] T125 Implement get_accounts() - extract accounts from session response
-- [ ] T126 Implement get_transactions() - GET /accounts/{id}/transactions with date filters
-- [ ] T127 Implement refresh_access() - handle session refresh if supported
-- [ ] T128 Implement revoke_access() - revoke session access
-- [ ] T129 Test: Write unit tests with mocked HTTP in backend/tests/unit/test_adapters/test_enablebanking_adapter.py
+- [x] T118 Create EnableBankingAdapter in backend/src/mybudget/adapters/enablebanking_adapter.py implementing BankProviderAdapter
+- [x] T119 [P] Implement _generate_jwt() - creates RS256 signed JWT with app_id as kid
+- [x] T120 [P] Implement _make_request() - HTTP client with JWT auth header
+- [x] T121 Implement get_institutions() - GET /aspsps with country filter
+- [x] T122 Implement create_requisition() - POST /auth to start OAuth flow
+- [x] T123 Implement get_requisition() - check authorization status
+- [x] T124 Implement complete_authorization() - POST /sessions to exchange code for session
+- [x] T125 Implement get_accounts() - extract accounts from session response
+- [x] T126 Implement get_transactions() - GET /accounts/{id}/transactions with date filters
+- [x] T127 Implement refresh_access() - handle session refresh if supported
+- [x] T128 Implement revoke_access() - revoke session access
+- [x] T129 Test: Write unit tests with mocked HTTP in backend/tests/unit/test_adapters/test_enablebanking_adapter.py (30 tests)
 
 ### Provider Selection
 
-- [ ] T130 Create get_bank_adapter() factory function in backend/src/mybudget/adapters/__init__.py
-- [ ] T131 Update BankConnectionService to use adapter factory based on provider config
-- [ ] T132 Store provider name in BankConnection model on creation
-- [ ] T133 Test: Write unit tests for provider selection logic
+- [x] T130 Create get_bank_adapter() factory function in backend/src/mybudget/adapters/__init__.py
+- [x] T131 Update BankConnectionService to use adapter factory based on provider config
+- [x] T132 Store provider name in BankConnection model on creation (already implemented)
+- [x] T133 Test: Write unit tests for provider selection logic (9 tests)
 
 ### Documentation
 
-- [ ] T134 Update DEPLOYMENT.md with EnableBanking configuration section
-- [ ] T135 Add EnableBanking environment variables to .env.example
+- [x] T134 Update DEPLOYMENT.md with EnableBanking configuration section
+- [x] T135 Add EnableBanking environment variables to .env.example
 
 **Checkpoint**: EnableBanking adapter functional, provider selection working
 

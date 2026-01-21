@@ -9,7 +9,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from mybudget.adapters import MockBankAdapter
+from mybudget.adapters import get_bank_adapter as adapter_factory
 from mybudget.adapters.base import BankProviderAdapter
 from mybudget.api.dependencies import CurrentUser
 from mybudget.db.session import get_db
@@ -31,12 +31,10 @@ def get_bank_adapter() -> BankProviderAdapter:
     """
     Get the bank provider adapter based on configuration.
 
-    For now, uses MockBankAdapter in development. In production,
-    this would return GoCardlessAdapter configured with credentials.
+    Uses the BANK_PROVIDER environment variable to determine which
+    adapter to use: 'gocardless', 'enablebanking', or 'mock'.
     """
-    # TODO: Add configuration to switch adapters based on environment
-    # For MVP testing, always use mock adapter
-    return MockBankAdapter()
+    return adapter_factory()
 
 
 @router.post("/initiate", response_model=OAuthInitResponse)
