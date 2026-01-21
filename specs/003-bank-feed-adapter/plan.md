@@ -55,13 +55,13 @@ The bank feed adapter uses a provider-agnostic design that allows swapping or ad
 │  │  - refresh_access()       - revoke_access()               │   │
 │  └──────────────────────────────────────────────────────────┘   │
 │                              │                                   │
-│        ┌─────────────────────┼─────────────────────┐            │
-│        ▼                     ▼                     ▼            │
-│  ┌───────────┐        ┌───────────┐        ┌───────────┐       │
-│  │ GoCardless│        │  Plaid    │        │  Mock     │       │
-│  │  Adapter  │        │  Adapter  │        │  Adapter  │       │
-│  │ (Nordigen)│        │ (future)  │        │  (tests)  │       │
-│  └───────────┘        └───────────┘        └───────────┘       │
+│        ┌────────────┬────────────┬────────────┬────────────┐    │
+│        ▼            ▼            ▼            ▼            │    │
+│  ┌───────────┐┌───────────┐┌───────────┐┌───────────┐     │    │
+│  │ GoCardless││  Enable   ││  Plaid    ││  Mock     │     │    │
+│  │  Adapter  ││  Banking  ││  Adapter  ││  Adapter  │     │    │
+│  │ (Nordigen)││  Adapter  ││ (future)  ││  (tests)  │     │    │
+│  └───────────┘└───────────┘└───────────┘└───────────┘     │    │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -84,6 +84,38 @@ The bank feed adapter uses a provider-agnostic design that allows swapping or ad
 3. Receive access tokens on callback
 4. Fetch accounts and transactions using access tokens
 5. Refresh tokens before expiry (90 days typical)
+
+### EnableBanking
+
+**Why EnableBanking:**
+- Alternative PSD2-compliant AIS provider for European banks
+- Different bank coverage than GoCardless (complementary)
+- Simple REST API with JWT authentication
+- Supports 2,000+ banks across Europe
+- Good fallback when GoCardless doesn't support a specific bank
+
+**Authentication:**
+- JWT tokens with RS256 algorithm
+- Application ID as `kid` in JWT header
+- Private key file for signing (generated during registration)
+- Tokens valid for up to 24 hours (86400 seconds)
+
+**API Flow:**
+1. `GET /aspsps` - List available banks by country
+2. `POST /auth` - Create authorization, returns redirect URL
+3. User authenticates with their bank via redirect
+4. Callback returns authorization code
+5. `POST /sessions` - Exchange code for session, returns accounts
+6. `GET /accounts/{id}/transactions` - Fetch transactions
+
+**Key Differences from GoCardless:**
+| Aspect | GoCardless | EnableBanking |
+|--------|-----------|---------------|
+| Auth | API Key/Secret | JWT RS256 |
+| Banks endpoint | `/institutions` | `/aspsps` |
+| OAuth start | `/requisitions` | `/auth` |
+| OAuth complete | Get requisition status | `POST /sessions` |
+| Session concept | Requisition with accounts | Session with accounts |
 
 ### Background Job Scheduler
 
@@ -316,6 +348,21 @@ POST   /api/v1/import/mappings
 - Sync controls
 - CSV import dialog
 
+### Phase 8-10: (Completed)
+- Phase 8: Frontend Connection UI
+- Phase 9: Frontend Sync & Import UI
+- Phase 10: Polish & Integration
+
+### Phase 11: EnableBanking Integration
+- EnableBanking adapter implementing BankProviderAdapter
+- JWT RS256 authentication with private key
+- Institution listing via `/aspsps` endpoint
+- OAuth flow via `/auth` and `/sessions` endpoints
+- Transaction fetching via `/accounts/{id}/transactions`
+- Provider selection configuration (env var or per-connection)
+- Update DEPLOYMENT.md with EnableBanking configuration
+- Unit tests with mocked HTTP responses
+
 ---
 
 ## Testing Strategy
@@ -345,10 +392,20 @@ POST   /api/v1/import/mappings
 ## Configuration
 
 ```python
-# Environment variables
+# Environment variables - GoCardless
 GOCARDLESS_SECRET_ID = "..."
 GOCARDLESS_SECRET_KEY = "..."
 GOCARDLESS_BASE_URL = "https://bankaccountdata.gocardless.com/api/v2"  # or sandbox
+
+# Environment variables - EnableBanking
+ENABLEBANKING_APP_ID = "..."  # Application ID (used as kid in JWT)
+ENABLEBANKING_PRIVATE_KEY_PATH = "/path/to/private_key.pem"  # RS256 private key
+ENABLEBANKING_BASE_URL = "https://api.enablebanking.com"
+
+# Provider selection
+BANK_PROVIDER = "gocardless"  # or "enablebanking" - default provider for new connections
+
+# Common settings
 BANK_SYNC_INTERVAL_HOURS = 6
 BANK_TOKEN_ENCRYPTION_KEY = "..."  # Fernet key
 ```
@@ -370,3 +427,5 @@ BANK_TOKEN_ENCRYPTION_KEY = "..."  # Fernet key
 - **Webhooks**: Real-time transaction notifications (when providers support)
 - **Multi-currency**: Handle non-EUR transactions with conversion
 - **Statement PDFs**: Import transactions from bank statement PDFs
+- **Provider Auto-Selection**: Automatically choose best provider based on user's bank
+- **Provider Failover**: Try alternative provider if primary fails for a bank
