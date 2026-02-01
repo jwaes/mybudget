@@ -1,0 +1,54 @@
+# API Contract: Account Deletion
+# Feature: 004-account-deletion
+# Note: This endpoint already exists - documented here for completeness
+
+openapi: 3.0.3
+info:
+  title: Account Deletion API
+  version: 1.0.0
+  description: Delete account endpoint (already implemented)
+
+paths:
+  /api/accounts/{account_id}:
+    delete:
+      summary: Delete an account
+      description: |
+        Permanently deletes an account and all associated transactions.
+        LinkedAccounts are preserved but their account_id is set to NULL.
+      operationId: deleteAccount
+      tags:
+        - Accounts
+      parameters:
+        - name: account_id
+          in: path
+          required: true
+          description: UUID of the account to delete
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Account successfully deleted
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Account not found or not owned by user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+          description: Error message
+      required:
+        - detail
