@@ -74,6 +74,10 @@ async def trigger_sync(
             connection_id=connection_id,
             linked_account_id=linked_account_id,
         )
+
+        # Execute the sync immediately for manual triggers
+        sync_job = await service.run_sync_job(sync_job.id)
+
         return SyncJobResponse.model_validate(sync_job)
 
     except ValueError as e:

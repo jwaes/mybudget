@@ -138,6 +138,21 @@ export function BankConnectionsSyncPanel({ onSyncComplete }: BankConnectionsSync
     }
   }
 
+  function formatExpiryDate(dateString: string | null): string {
+    if (!dateString) return 'Unknown'
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffMs = date.getTime() - now.getTime()
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+
+    if (diffDays < 0) return 'Expired'
+    if (diffDays === 0) return 'Expires today'
+    if (diffDays === 1) return 'Expires tomorrow'
+    if (diffDays < 7) return `Expires in ${diffDays} days`
+    if (diffDays < 30) return `Expires in ${Math.floor(diffDays / 7)} weeks`
+    return `Expires ${date.toLocaleDateString()}`
+  }
+
   if (isLoading) {
     return (
       <Card>
@@ -218,15 +233,16 @@ export function BankConnectionsSyncPanel({ onSyncComplete }: BankConnectionsSync
                         {connection.health_status}
                       </Badge>
                     </div>
-                    <div className="text-sm text-muted-foreground">
-                      Last synced: {formatRelativeTime(connection.last_sync_at)}
+                    <div className="text-sm text-muted-foreground space-y-0.5">
+                      <div>Last synced: {formatRelativeTime(connection.last_sync_at)}</div>
+                      <div>{formatExpiryDate(connection.access_valid_until)}</div>
                     </div>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-3">
-                  {/* Show sync status if there's an active sync */}
-                  {syncState?.currentJob && (
+                  {/* Show sync status only after sync completes (not during loading - button handles that) */}
+                  {syncState?.currentJob && !syncState.isLoading && (
                     <SyncStatusIndicator
                       status={syncState.currentJob.status}
                       transactionsImported={syncState.currentJob.transactions_imported}
