@@ -114,3 +114,6 @@ Thumbs.db
 *.swp
 *.swo
 *~
+
+# EnableBanking keys
+backend/keys/

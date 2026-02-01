@@ -76,18 +76,22 @@ async def oauth_callback(
     current_user: CurrentUser,
     db: Annotated[AsyncSession, Depends(get_db)],
     adapter: Annotated[BankProviderAdapter, Depends(get_bank_adapter)],
+    code: Annotated[str | None, Query(description="Authorization code (required for EnableBanking)")] = None,
 ) -> BankConnectionWithAccountsResponse:
     """
     Complete OAuth flow after user returns from bank.
 
     This endpoint is called after the user completes bank authentication.
     It activates the connection and fetches linked accounts.
+
+    For EnableBanking, the 'code' parameter is required to exchange for a session.
     """
     service = BankConnectionService(db, adapter)
     try:
         result = await service.complete_oauth(
             user_id=current_user.id,
             reference_id=ref,
+            auth_code=code,
         )
         return result
     except ValueError as e:

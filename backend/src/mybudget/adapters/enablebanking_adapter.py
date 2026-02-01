@@ -115,6 +115,9 @@ class EnableBankingAdapter(BankProviderAdapter):
         # Session cache (session_id -> session data)
         self._session_cache: dict[str, dict[str, Any]] = {}
 
+        # Institution cache (institution_id -> Institution)
+        self._institution_cache: dict[str, Institution] = {}
+
         # HTTP client
         self._client = httpx.AsyncClient(
             timeout=httpx.Timeout(30.0, connect=10.0),
@@ -145,8 +148,8 @@ class EnableBankingAdapter(BankProviderAdapter):
         expires = now + timedelta(hours=1)  # Token valid for 1 hour
 
         payload = {
-            "iss": self._app_id,
-            "aud": "enablebanking.com",
+            "iss": "enablebanking.com",
+            "aud": "api.enablebanking.com",
             "iat": int(now.timestamp()),
             "exp": int(expires.timestamp()),
         }
@@ -241,10 +244,16 @@ class EnableBankingAdapter(BankProviderAdapter):
         self,
         country: str | None = None,
         *,
-        limit: int = 100,
+        limit: int = 0,
         offset: int = 0,
     ) -> list[Institution]:
-        """Get list of available banking institutions (ASPSPs)."""
+        """Get list of available banking institutions (ASPSPs).
+
+        Args:
+            country: Optional country code to filter by (e.g., 'FI', 'DE')
+            limit: Maximum number of results (0 = no limit)
+            offset: Number of results to skip
+        """
         params: dict[str, Any] = {}
         if country:
             params["country"] = country
@@ -255,23 +264,32 @@ class EnableBankingAdapter(BankProviderAdapter):
         aspsps = data.get("aspsps", []) if isinstance(data, dict) else data
 
         for item in aspsps:
-            institutions.append(
-                Institution(
-                    id=item["name"],  # EnableBanking uses name as identifier
-                    name=item.get("fullname", item["name"]),
-                    bic=item.get("bic"),
-                    logo_url=item.get("logo"),
-                    countries=tuple(item.get("countries", [item.get("country", "")])),
-                )
+            institution = Institution(
+                id=item["name"],  # EnableBanking uses name as identifier
+                name=item.get("fullname", item["name"]),
+                bic=item.get("bic"),
+                logo_url=item.get("logo"),
+                countries=tuple(item.get("countries", [item.get("country", "")])),
             )
+            institutions.append(institution)
+            # Cache the institution for later lookup
+            self._institution_cache[institution.id] = institution
 
-        # Apply pagination
-        return institutions[offset : offset + limit]
+        # Apply pagination only if limit is specified
+        if limit > 0:
+            return institutions[offset : offset + limit]
+        elif offset > 0:
+            return institutions[offset:]
+        return institutions
 
     async def get_institution(self, institution_id: str) -> Institution | None:
         """Get details for a specific institution."""
+        # First check the cache - institutions are cached when get_institutions() is called
+        if institution_id in self._institution_cache:
+            return self._institution_cache[institution_id]
+
         # EnableBanking doesn't have a single-institution endpoint
-        # Search in the list
+        # Search in the list (this will also populate the cache)
         institutions = await self.get_institutions()
         for inst in institutions:
             if inst.id == institution_id:
@@ -289,6 +307,14 @@ class EnableBankingAdapter(BankProviderAdapter):
         max_historical_days: int = 90,
     ) -> RequisitionResponse:
         """Create an authorization request for bank access."""
+        # Get institution details to find the country
+        institution = await self.get_institution(institution_id)
+        if not institution:
+            raise ValueError(f"Institution not found: {institution_id}")
+
+        # Get the first country from the institution
+        country = institution.countries[0] if institution.countries else "FI"
+
         # EnableBanking uses POST /auth to start OAuth
         data = await self._make_request(
             "POST",
@@ -299,7 +325,10 @@ class EnableBankingAdapter(BankProviderAdapter):
                         datetime.now(UTC) + timedelta(days=agreement_days)
                     ).strftime("%Y-%m-%dT%H:%M:%SZ"),
                 },
-                "aspsp": {"name": institution_id},
+                "aspsp": {
+                    "name": institution_id,
+                    "country": country,
+                },
                 "state": reference,
                 "redirect_url": redirect_url,
                 "psu_type": "personal",
@@ -363,7 +392,8 @@ class EnableBankingAdapter(BankProviderAdapter):
         for acc in data.get("accounts", []):
             account_id = acc.get("account_id", {})
             # Use IBAN or other identifier as account ID
-            acc_id = account_id.get("iban") or account_id.get("other", {}).get("identification")
+            other_data = account_id.get("other") or {}
+            acc_id = account_id.get("iban") or (other_data.get("identification") if isinstance(other_data, dict) else None)
             if acc_id:
                 accounts.append(acc_id)
 
@@ -394,7 +424,8 @@ class EnableBankingAdapter(BankProviderAdapter):
         for acc in session.get("accounts", []):
             account_id = acc.get("account_id", {})
             iban = account_id.get("iban")
-            other_id = account_id.get("other", {}).get("identification")
+            other_data = account_id.get("other") or {}
+            other_id = other_data.get("identification") if isinstance(other_data, dict) else None
             acc_id = iban or other_id or ""
 
             # Map account type
@@ -428,7 +459,8 @@ class EnableBankingAdapter(BankProviderAdapter):
             for acc in session.get("accounts", []):
                 account_id_data = acc.get("account_id", {})
                 iban = account_id_data.get("iban")
-                other_id = account_id_data.get("other", {}).get("identification")
+                other_data = account_id_data.get("other") or {}
+                other_id = other_data.get("identification") if isinstance(other_data, dict) else None
                 acc_id = iban or other_id or ""
 
                 if acc_id == account_id:
@@ -459,7 +491,8 @@ class EnableBankingAdapter(BankProviderAdapter):
             for acc in session.get("accounts", []):
                 account_id_data = acc.get("account_id", {})
                 iban = account_id_data.get("iban")
-                other_id = account_id_data.get("other", {}).get("identification")
+                other_data = account_id_data.get("other") or {}
+                other_id = other_data.get("identification") if isinstance(other_data, dict) else None
                 if (iban or other_id) == account_id:
                     session_id = sid
                     break
@@ -528,7 +561,8 @@ class EnableBankingAdapter(BankProviderAdapter):
             for acc in session.get("accounts", []):
                 account_id_data = acc.get("account_id", {})
                 iban = account_id_data.get("iban")
-                other_id = account_id_data.get("other", {}).get("identification")
+                other_data = account_id_data.get("other") or {}
+                other_id = other_data.get("identification") if isinstance(other_data, dict) else None
                 if (iban or other_id) == account_id:
                     session_id = sid
                     break

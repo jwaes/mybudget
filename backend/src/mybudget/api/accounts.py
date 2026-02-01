@@ -39,12 +39,30 @@ async def list_accounts(
     current_user: CurrentUser,
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> AccountListResponse:
-    """List all accounts for the current user."""
+    """List all accounts for the current user with bank connection info."""
     service = AccountService(db)
-    accounts = await service.list_accounts(current_user.id)
+    accounts_with_info = await service.list_accounts(current_user.id)
     return AccountListResponse(
-        accounts=[AccountResponse.model_validate(a) for a in accounts],
-        total=len(accounts),
+        accounts=[
+            AccountResponse(
+                id=awi.account.id,
+                user_id=awi.account.user_id,
+                name=awi.account.name,
+                account_type=awi.account.account_type,
+                balance=awi.account.balance,
+                initial_balance=awi.account.initial_balance,
+                created_at=awi.account.created_at,
+                updated_at=awi.account.updated_at,
+                sync_status=awi.account.sync_status,
+                last_sync_at=awi.account.last_sync_at,
+                sync_error=awi.account.sync_error,
+                bank_connection_id=awi.bank_connection_id,
+                bank_connection_name=awi.bank_connection_name,
+                bank_connection_health=awi.bank_connection_health,
+            )
+            for awi in accounts_with_info
+        ],
+        total=len(accounts_with_info),
     )
 
 

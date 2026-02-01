@@ -20,12 +20,12 @@ export function BankCallbackPage() {
   const [error, setError] = useState<string | null>(null)
   const [bankName, setBankName] = useState<string | null>(null)
 
-  const completeOAuth = useCallback(async (reference: string) => {
+  const completeOAuth = useCallback(async (reference: string, code?: string) => {
     try {
       setStatus('loading')
       setError(null)
 
-      const connection = await bankConnectionService.completeOAuth(reference)
+      const connection = await bankConnectionService.completeOAuth(reference, code)
 
       setBankName(connection.institution_name)
       setStatus('success')
@@ -45,7 +45,9 @@ export function BankCallbackPage() {
   }, [navigate])
 
   useEffect(() => {
-    const ref = searchParams.get('ref')
+    // Support both GoCardless (ref) and EnableBanking (state) parameter names
+    const ref = searchParams.get('ref') || searchParams.get('state')
+    const code = searchParams.get('code') || undefined
 
     if (!ref) {
       setStatus('error')
@@ -53,7 +55,7 @@ export function BankCallbackPage() {
       return
     }
 
-    completeOAuth(ref)
+    completeOAuth(ref, code)
   }, [searchParams, completeOAuth])
 
   function handleGoToAccounts() {

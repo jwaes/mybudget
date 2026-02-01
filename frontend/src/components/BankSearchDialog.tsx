@@ -63,23 +63,35 @@ export function BankSearchDialog({
     }
   }
 
-  // Filter institutions by search term
+  // Filter and sort institutions by search term
   const filteredInstitutions = useMemo(() => {
-    if (!searchTerm.trim()) {
-      return institutions
+    let result = [...institutions]
+
+    // Filter by search term
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase()
+      result = result.filter(
+        (inst) =>
+          inst.name.toLowerCase().includes(term) ||
+          (inst.bic && inst.bic.toLowerCase().includes(term))
+      )
     }
-    const term = searchTerm.toLowerCase()
-    return institutions.filter(
-      (inst) =>
-        inst.name.toLowerCase().includes(term) ||
-        (inst.bic && inst.bic.toLowerCase().includes(term))
-    )
+
+    // Sort alphabetically by name
+    result.sort((a, b) => a.name.localeCompare(b.name))
+
+    return result
   }, [institutions, searchTerm])
+
+  // Create unique key for institution (id + countries)
+  function getInstitutionKey(institution: Institution): string {
+    return `${institution.id}-${institution.countries.join('-')}`
+  }
 
   async function handleSelectBank(institution: Institution) {
     try {
       setIsConnecting(true)
-      setConnectingId(institution.id)
+      setConnectingId(getInstitutionKey(institution))
       setError(null)
 
       // Get the callback URL
@@ -151,22 +163,30 @@ export function BankSearchDialog({
 
           {/* Institution list */}
           {!isLoading && !error && (
-            <ScrollArea className="h-[300px]">
-              <div className="space-y-1 pr-4">
-                {filteredInstitutions.length === 0 ? (
-                  <div className="py-8 text-center text-muted-foreground">
-                    {searchTerm
-                      ? 'No banks found matching your search.'
-                      : 'No banks available.'}
-                  </div>
-                ) : (
-                  filteredInstitutions.map((institution) => (
+            <>
+              {/* Result count */}
+              <div className="text-xs text-muted-foreground mb-2">
+                {filteredInstitutions.length} bank{filteredInstitutions.length !== 1 ? 's' : ''} found
+                {searchTerm && ` for "${searchTerm}"`}
+              </div>
+              <ScrollArea className="h-[300px] border rounded-md [&_[data-radix-scroll-area-scrollbar]]:bg-muted [&_[data-radix-scroll-area-thumb]]:bg-muted-foreground/50">
+                <div className="space-y-1 p-2">
+                  {filteredInstitutions.length === 0 ? (
+                    <div className="py-8 text-center text-muted-foreground">
+                      {searchTerm
+                        ? 'No banks found matching your search.'
+                        : 'No banks available.'}
+                    </div>
+                  ) : (
+                  filteredInstitutions.map((institution) => {
+                    const uniqueKey = getInstitutionKey(institution)
+                    return (
                     <button
-                      key={institution.id}
+                      key={uniqueKey}
                       onClick={() => handleSelectBank(institution)}
                       disabled={isConnecting}
                       className="flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors hover:bg-muted/50 focus:bg-muted/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
-                      data-testid={`bank-item-${institution.id}`}
+                      data-testid={`bank-item-${uniqueKey}`}
                     >
                       {/* Bank logo or placeholder */}
                       {institution.logo_url ? (
@@ -191,14 +211,16 @@ export function BankSearchDialog({
                       </div>
 
                       {/* Loading indicator for connecting bank */}
-                      {connectingId === institution.id && (
+                      {connectingId === uniqueKey && (
                         <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                       )}
                     </button>
-                  ))
+                    )
+                  })
                 )}
-              </div>
-            </ScrollArea>
+                </div>
+              </ScrollArea>
+            </>
           )}
         </div>
       </DialogContent>

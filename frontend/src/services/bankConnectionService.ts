@@ -38,11 +38,16 @@ export const bankConnectionService = {
   /**
    * Complete the OAuth flow after bank authorization.
    *
-   * @param reference - The reference ID from the callback
+   * @param reference - The reference ID from the callback (ref or state param)
+   * @param code - Optional authorization code (required for EnableBanking)
    * @returns The created bank connection
    */
-  async completeOAuth(reference: string): Promise<BankConnection> {
-    return api.get<BankConnection>(`/connections/callback?ref=${encodeURIComponent(reference)}`)
+  async completeOAuth(reference: string, code?: string): Promise<BankConnection> {
+    const params = new URLSearchParams({ ref: reference })
+    if (code) {
+      params.append('code', code)
+    }
+    return api.get<BankConnection>(`/connections/callback?${params.toString()}`)
   },
 
   /**
