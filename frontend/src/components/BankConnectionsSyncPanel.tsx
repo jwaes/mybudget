@@ -153,6 +153,20 @@ export function BankConnectionsSyncPanel({ onSyncComplete }: BankConnectionsSync
     return `Expires ${date.toLocaleDateString()}`
   }
 
+  function formatNextSync(dateString: string | null): string {
+    if (!dateString) return 'Not scheduled'
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffMs = date.getTime() - now.getTime()
+    const diffMins = Math.floor(diffMs / 60000)
+
+    if (diffMins < 0) return 'Due now'
+    if (diffMins < 60) return `in ${diffMins}m`
+    const diffHours = Math.floor(diffMins / 60)
+    if (diffHours < 24) return `in ${diffHours}h`
+    return date.toLocaleString()
+  }
+
   if (isLoading) {
     return (
       <Card>
@@ -235,6 +249,7 @@ export function BankConnectionsSyncPanel({ onSyncComplete }: BankConnectionsSync
                     </div>
                     <div className="text-sm text-muted-foreground space-y-0.5">
                       <div>Last synced: {formatRelativeTime(connection.last_sync_at)}</div>
+                      <div>Next sync: {formatNextSync(connection.next_sync_at)}</div>
                       <div>{formatExpiryDate(connection.access_valid_until)}</div>
                     </div>
                   </div>

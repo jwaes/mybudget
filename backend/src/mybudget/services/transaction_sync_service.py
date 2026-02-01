@@ -16,6 +16,7 @@ from sqlalchemy.orm import selectinload
 
 from mybudget.adapters.base import BankProviderAdapter
 from mybudget.adapters.types import ProviderTransaction
+from mybudget.config import settings
 from mybudget.models.bank_connection import (
     BankConnection,
     BankConnectionStatus,
@@ -212,8 +213,11 @@ class TransactionSyncService:
             sync_job.status = SyncJobStatus.COMPLETED
             sync_job.completed_at = datetime.now(UTC)
 
-            # Update connection last_sync_at
+            # Update connection last_sync_at and schedule next sync
             linked_account.connection.last_sync_at = datetime.now(UTC)
+            linked_account.connection.next_sync_at = datetime.now(UTC) + timedelta(
+                hours=settings.BANK_SYNC_INTERVAL_HOURS
+            )
 
             await self.db.commit()
 
@@ -508,6 +512,10 @@ class TransactionSyncService:
             sync_job.error_message = "; ".join(errors)
         else:
             sync_job.status = SyncJobStatus.COMPLETED
+            # Schedule next automatic sync
+            connection.next_sync_at = datetime.now(UTC) + timedelta(
+                hours=settings.BANK_SYNC_INTERVAL_HOURS
+            )
 
         await self.db.commit()
         return sync_job
