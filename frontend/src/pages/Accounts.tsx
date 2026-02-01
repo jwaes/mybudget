@@ -7,6 +7,7 @@
 import { useState } from 'react'
 import { Building2 } from 'lucide-react'
 import { AccountList } from '@/components/AccountList'
+import { BankConnectionsSyncPanel } from '@/components/BankConnectionsSyncPanel'
 import { BankSearchDialog } from '@/components/BankSearchDialog'
 import { accountService } from '@/services/accountService'
 import type { AccountType } from '@/types/account'
@@ -149,6 +150,12 @@ export function AccountsPage() {
       )}
 
       <AccountList key={refreshKey} />
+
+      <div className="mt-6">
+        <BankConnectionsSyncPanel
+          onSyncComplete={() => setRefreshKey((prev) => prev + 1)}
+        />
+      </div>
 
       <BankSearchDialog
         open={isBankSearchOpen}
