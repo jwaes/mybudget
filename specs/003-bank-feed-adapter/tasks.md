@@ -261,6 +261,7 @@
 - [x] T113 Add loading states to all async operations (implemented in components)
 - [x] T114 Update DEPLOYMENT.md with GoCardless configuration
 - [ ] T115 Final code review and cleanup
+- [ ] T136 [US3][US5] Integrate BankConnectionsSyncPanel into Accounts page (shows last sync time, Sync Now button per connection)
 
 ---
 
