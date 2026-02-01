@@ -8,6 +8,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 from mybudget.models.account import AccountType, SyncStatus
+from mybudget.schemas.bank_connection import ConnectionHealthStatus
 
 
 class AccountCreate(BaseModel):
@@ -40,6 +41,10 @@ class AccountResponse(BaseModel):
     sync_status: SyncStatus
     last_sync_at: datetime | None = None
     sync_error: str | None = None
+    # Bank connection fields (for linked accounts)
+    bank_connection_id: UUID | None = None
+    bank_connection_name: str | None = None
+    bank_connection_health: ConnectionHealthStatus | None = None
 
 
 class AccountListResponse(BaseModel):

@@ -1,15 +1,75 @@
 """
 Account service for business logic operations.
 """
-from datetime import UTC, datetime
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from mybudget.models.account import Account, SyncStatus
+from mybudget.models.bank_connection import BankConnection, BankConnectionStatus, LinkedAccount
 from mybudget.schemas.account import AccountCreate, AccountUpdate
+from mybudget.schemas.bank_connection import ConnectionHealthStatus
+
+
+@dataclass
+class AccountWithBankInfo:
+    """Account with bank connection info for response."""
+
+    account: Account
+    bank_connection_id: UUID | None = None
+    bank_connection_name: str | None = None
+    bank_connection_health: ConnectionHealthStatus | None = None
+
+
+def compute_health_status(
+    connection: BankConnection,
+    warning_days: int = 7,
+    stale_hours: int = 24,
+) -> ConnectionHealthStatus:
+    """
+    Compute the health status of a bank connection.
+
+    Args:
+        connection: BankConnection model instance
+        warning_days: Days before expiry to trigger warning (default 7)
+        stale_hours: Hours since last sync to consider stale (default 24)
+
+    Returns:
+        ConnectionHealthStatus: HEALTHY, WARNING, or ERROR
+    """
+    now = datetime.now(UTC)
+
+    # ERROR conditions
+    if connection.status not in (
+        BankConnectionStatus.ACTIVE,
+        BankConnectionStatus.NEEDS_ATTENTION,
+    ):
+        return ConnectionHealthStatus.ERROR
+
+    if (
+        connection.access_valid_until is not None
+        and connection.access_valid_until <= now
+    ):
+        return ConnectionHealthStatus.ERROR
+
+    # WARNING conditions
+    if connection.access_valid_until is not None:
+        warning_threshold = now + timedelta(days=warning_days)
+        if connection.access_valid_until <= warning_threshold:
+            return ConnectionHealthStatus.WARNING
+
+    # Check for stale sync
+    if connection.last_sync_at is not None:
+        stale_threshold = now - timedelta(hours=stale_hours)
+        if connection.last_sync_at < stale_threshold:
+            return ConnectionHealthStatus.WARNING
+
+    return ConnectionHealthStatus.HEALTHY
 
 
 class AccountService:
@@ -66,19 +126,54 @@ class AccountService:
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def list_accounts(self, user_id: UUID) -> list[Account]:
+    async def list_accounts(self, user_id: UUID) -> list[AccountWithBankInfo]:
         """
-        List all accounts for a user.
+        List all accounts for a user with bank connection info.
 
         Args:
             user_id: Owner user ID
 
         Returns:
-            List of user's accounts
+            List of user's accounts with bank connection info
         """
+        # First get all accounts
         stmt = select(Account).where(Account.user_id == user_id).order_by(Account.name)
         result = await self.db.execute(stmt)
-        return list(result.scalars().all())
+        accounts = list(result.scalars().all())
+
+        if not accounts:
+            return []
+
+        # Get linked accounts for these account IDs with their bank connections
+        account_ids = [a.id for a in accounts]
+        linked_stmt = (
+            select(LinkedAccount)
+            .where(LinkedAccount.account_id.in_(account_ids))
+            .options(selectinload(LinkedAccount.connection))
+        )
+        linked_result = await self.db.execute(linked_stmt)
+        linked_accounts = list(linked_result.scalars().all())
+
+        # Build lookup from account_id to bank connection info
+        bank_info_by_account: dict[UUID, tuple[UUID, str, ConnectionHealthStatus]] = {}
+        for la in linked_accounts:
+            if la.account_id and la.connection:
+                bank_info_by_account[la.account_id] = (
+                    la.connection.id,
+                    la.connection.institution_name,
+                    compute_health_status(la.connection),
+                )
+
+        # Combine accounts with bank info
+        return [
+            AccountWithBankInfo(
+                account=acc,
+                bank_connection_id=bank_info_by_account.get(acc.id, (None, None, None))[0],
+                bank_connection_name=bank_info_by_account.get(acc.id, (None, None, None))[1],
+                bank_connection_health=bank_info_by_account.get(acc.id, (None, None, None))[2],
+            )
+            for acc in accounts
+        ]
 
     async def update_account(
         self, user_id: UUID, account_id: UUID, data: AccountUpdate
