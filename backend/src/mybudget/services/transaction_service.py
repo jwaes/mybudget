@@ -238,11 +238,21 @@ class TransactionService:
             transaction.amount = data.amount
         if data.memo is not None:
             transaction.memo = data.memo
-        if data.category_id is not None:
-            # Verify category exists
-            category = await self._get_category(user_id, data.category_id)
-            if not category:
-                return None
+
+        # Handle category_id - check if explicitly provided (including null)
+        if "category_id" in data.model_fields_set:
+            # Verify category exists if setting to a value
+            if data.category_id is not None:
+                category = await self._get_category(user_id, data.category_id)
+                if not category:
+                    return None
+            # If category changed on approved transaction, move back to inbox
+            if (
+                transaction.state == TransactionState.APPROVED
+                and transaction.category_id != data.category_id
+            ):
+                transaction.state = TransactionState.INBOX
+                transaction.approved_at = None
             transaction.category_id = data.category_id
 
         await self.db.commit()

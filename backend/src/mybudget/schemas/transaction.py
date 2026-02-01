@@ -65,6 +65,7 @@ class TransactionResponse(BaseModel):
     user_id: UUID
     account_id: UUID
     category_id: UUID | None
+    category_name: str | None = None
     date: date_type
     payee: str
     amount: Decimal

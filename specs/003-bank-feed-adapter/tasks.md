@@ -32,7 +32,7 @@
 - [x] T002 [P] Create LinkedAccount model in backend/src/mybudget/models/bank_connection.py (consolidated with BankConnection)
 - [x] T003 [P] Create SyncJob model in backend/src/mybudget/models/bank_connection.py (consolidated with BankConnection)
 - [ ] T004 [P] Create CSVImportMapping model in backend/src/mybudget/models/csv_import_mapping.py (id, user_id, name, delimiter, date_column, date_format, amount_column, payee_column, memo_column)
-- [ ] T005 Add external_id, import_source, import_batch_id columns to Transaction model
+- [x] T005 Add external_id, import_source, import_batch_id columns to Transaction model
 - [x] T006 Generate Alembic migration for bank feed tables
 - [x] T007 Create Pydantic schemas in backend/src/mybudget/schemas/bank_connection.py
 - [x] T008 [P] Create Pydantic schemas in backend/src/mybudget/schemas/sync_job.py

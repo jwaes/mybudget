@@ -9,6 +9,7 @@ export interface Transaction {
   user_id: string
   account_id: string
   category_id: string | null
+  category_name: string | null
   date: string
   payee: string
   amount: string

@@ -3,15 +3,21 @@ Transaction model.
 
 Represents a financial transaction on an account.
 """
+from __future__ import annotations
+
 from datetime import UTC, date, datetime
 from decimal import Decimal
 from enum import Enum
+from typing import TYPE_CHECKING
 from uuid import UUID
+
+if TYPE_CHECKING:
+    from mybudget.models.category import Category
 
 from sqlalchemy import CheckConstraint, Date, DateTime, ForeignKey, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import ENUM
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from mybudget.db.base import Base
 
@@ -89,6 +95,10 @@ class Transaction(Base):
         nullable=True,
         index=True,
     )
+    # Relationship to get category name
+    category: Mapped["Category | None"] = relationship(
+        "Category", lazy="joined", foreign_keys=[category_id]
+    )
     date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
     payee: Mapped[str] = mapped_column(String(255), nullable=False)
     amount: Mapped[Decimal] = mapped_column(Numeric(19, 4), nullable=False)
@@ -149,6 +159,11 @@ class Transaction(Base):
             name="ck_transactions_confidence_score_range",
         ),
     )
+
+    @property
+    def category_name(self) -> str | None:
+        """Get the category name if category is loaded."""
+        return self.category.name if self.category else None
 
     def __repr__(self) -> str:
         """Readable representation of Transaction."""
