@@ -53,7 +53,14 @@ export function AppSidebar() {
     fetchUncategorizedCount()
     const interval = setInterval(fetchUncategorizedCount, 30000)
 
-    return () => clearInterval(interval)
+    // Listen for account deletion events to refresh count
+    const handleAccountDeleted = () => fetchUncategorizedCount()
+    window.addEventListener('account-deleted', handleAccountDeleted)
+
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('account-deleted', handleAccountDeleted)
+    }
   }, [])
 
   const isActive = (url: string) => {

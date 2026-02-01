@@ -24,7 +24,7 @@
 
 **Purpose**: Service layer foundation for delete functionality
 
-- [ ] T001 Add delete() method to accountService in frontend/src/services/accountService.ts
+- [x] T001 Add delete() method to accountService in frontend/src/services/accountService.ts (ALREADY EXISTS)
 
 **Checkpoint**: Service layer ready for UI components
 
@@ -40,14 +40,14 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T002 [P] [US1] Write component tests for DeleteAccountDialog in frontend/tests/components/DeleteAccountDialog.test.tsx (renders, shows account name, shows transaction warning, handles cancel, handles delete, shows loading, shows error)
+- [x] T002 [P] [US1] Write component tests for DeleteAccountDialog in frontend/tests/components/DeleteAccountDialog.test.tsx (renders, shows account name, shows transaction warning, handles cancel, handles delete, shows loading, shows error)
 
 ### Implementation for User Story 1
 
-- [ ] T003 [US1] Create DeleteAccountDialog component in frontend/src/components/DeleteAccountDialog.tsx (copy pattern from DisconnectConfirmDialog)
-- [ ] T004 [US1] Add delete button/menu to account rows in frontend/src/pages/Accounts.tsx
-- [ ] T005 [US1] Wire DeleteAccountDialog to Accounts page with state management in frontend/src/pages/Accounts.tsx
-- [ ] T006 [US1] Add success toast notification after deletion in frontend/src/pages/Accounts.tsx
+- [x] T003 [US1] Create DeleteAccountDialog component in frontend/src/components/DeleteAccountDialog.tsx (copy pattern from DisconnectConfirmDialog)
+- [x] T004 [US1] Add delete button/menu to account rows in frontend/src/components/AccountList.tsx (dropdown menu with Reconcile/Delete)
+- [x] T005 [US1] Wire DeleteAccountDialog to AccountList with state management in frontend/src/components/AccountList.tsx
+- [x] T006 [US1] Refresh account list after deletion in frontend/src/components/AccountList.tsx (toast deferred - no toast system)
 
 **Checkpoint**: Manual account deletion fully functional and testable
 
@@ -61,12 +61,12 @@
 
 ### Tests for User Story 2
 
-- [ ] T007 [P] [US2] Add test cases for bank-connected accounts to DeleteAccountDialog tests in frontend/tests/components/DeleteAccountDialog.test.tsx (shows unlink warning for bank-connected accounts)
+- [x] T007 [P] [US2] Add test cases for bank-connected accounts to DeleteAccountDialog tests in frontend/tests/components/DeleteAccountDialog.test.tsx (shows unlink warning for bank-connected accounts)
 
 ### Implementation for User Story 2
 
-- [ ] T008 [US2] Update DeleteAccountDialog to show bank-specific warning when account.linked_account_id is present in frontend/src/components/DeleteAccountDialog.tsx
-- [ ] T009 [US2] Ensure Account type includes linked_account_id field in frontend/src/types/account.ts (verify or add)
+- [x] T008 [US2] Update DeleteAccountDialog to show bank-specific warning when account.bank_connection_id is present in frontend/src/components/DeleteAccountDialog.tsx
+- [x] T009 [US2] Account type already includes bank_connection_id field in frontend/src/types/account.ts (verified)
 
 **Checkpoint**: Bank-connected account deletion works correctly
 
@@ -79,8 +79,8 @@
 - [ ] T010 Manual test: Delete manual account with transactions - verify transactions deleted
 - [ ] T011 Manual test: Delete bank-connected account - verify account removed, bank connection preserved
 - [ ] T012 Manual test: Cancel deletion - verify account unchanged
-- [ ] T013 Run all frontend tests and verify passing
-- [ ] T014 Final code review and cleanup
+- [x] T013 Run all frontend tests and verify passing (29/29 tests pass)
+- [x] T014 Final code review and cleanup
 
 ---
 

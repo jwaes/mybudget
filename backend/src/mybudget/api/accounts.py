@@ -41,10 +41,20 @@ async def list_accounts(
 ) -> AccountListResponse:
     """List all accounts for the current user."""
     service = AccountService(db)
-    accounts = await service.list_accounts(current_user.id)
+    accounts_with_info = await service.list_accounts(current_user.id)
+
+    # Convert AccountWithBankInfo to AccountResponse
+    account_responses = []
+    for awi in accounts_with_info:
+        response = AccountResponse.model_validate(awi.account)
+        response.bank_connection_id = awi.bank_connection_id
+        response.bank_connection_name = awi.bank_connection_name
+        response.bank_connection_health = awi.bank_connection_health
+        account_responses.append(response)
+
     return AccountListResponse(
-        accounts=[AccountResponse.model_validate(a) for a in accounts],
-        total=len(accounts),
+        accounts=account_responses,
+        total=len(account_responses),
     )
 
 
