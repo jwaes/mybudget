@@ -6,9 +6,10 @@
  */
 
 import React, { useEffect, useState, useMemo } from 'react'
-import { CheckCircle, XCircle, Clock, Minus, RefreshCw, Building2 } from 'lucide-react'
+import { CheckCircle, XCircle, Clock, Minus, RefreshCw, Building2, Trash2, MoreHorizontal } from 'lucide-react'
 import { accountService } from '@/services/accountService'
 import { ReconcileModal } from './ReconcileModal'
+import { DeleteAccountDialog } from './DeleteAccountDialog'
 import { ConnectionStatusBadge } from './ConnectionStatusBadge'
 import type { Account } from '@/types/account'
 import { Button } from '@/components/ui/button'
@@ -29,6 +30,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 function formatRelativeTime(dateString: string | null): string {
   if (!dateString) return ''
@@ -53,6 +60,7 @@ export function AccountList({ onAccountSelect, onReconcileComplete }: AccountLis
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [reconcileAccount, setReconcileAccount] = useState<Account | null>(null)
+  const [deleteAccount, setDeleteAccount] = useState<Account | null>(null)
   const [retryingAccountId, setRetryingAccountId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -251,17 +259,38 @@ export function AccountList({ onAccountSelect, onReconcileComplete }: AccountLis
           {formatCurrency(account.balance)}
         </TableCell>
         <TableCell>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation()
-              setReconcileAccount(account)
-            }}
-            aria-label={`Reconcile ${account.name}`}
-          >
-            Reconcile
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => e.stopPropagation()}
+                aria-label={`Actions for ${account.name}`}
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setReconcileAccount(account)
+                }}
+              >
+                Reconcile
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setDeleteAccount(account)
+                }}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </TableCell>
       </TableRow>
     )
@@ -328,6 +357,26 @@ export function AccountList({ onAccountSelect, onReconcileComplete }: AccountLis
           onReconcileComplete?.()
         }}
       />
+
+      {deleteAccount && (
+        <DeleteAccountDialog
+          open={deleteAccount !== null}
+          onOpenChange={(open) => {
+            if (!open) setDeleteAccount(null)
+          }}
+          account={{
+            id: deleteAccount.id,
+            name: deleteAccount.name,
+            bank_connection_id: deleteAccount.bank_connection_id,
+          }}
+          onDeleted={() => {
+            setDeleteAccount(null)
+            loadAccounts()
+            // Notify sidebar to refresh uncategorized count
+            window.dispatchEvent(new Event('account-deleted'))
+          }}
+        />
+      )}
     </Card>
   )
 }
