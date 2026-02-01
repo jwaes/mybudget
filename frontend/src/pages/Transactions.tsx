@@ -1,12 +1,11 @@
 /**
  * Transactions page.
  *
- * Displays all transactions and provides access to the inbox.
+ * Displays all transactions with filtering and search.
  */
 
 import { useState, useEffect, useCallback } from 'react'
 import { Upload } from 'lucide-react'
-import { TransactionInbox } from '@/components/TransactionInbox'
 import { CSVImportDialog } from '@/components/CSVImportDialog'
 import { AddTransactionModal } from '@/components/AddTransactionModal'
 import { TransactionSearch } from '@/components/TransactionSearch'
@@ -37,10 +36,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 
-type TabType = 'inbox' | 'all'
-
 export function TransactionsPage() {
-  const [activeTab, setActiveTab] = useState<TabType>('inbox')
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [accounts, setAccounts] = useState<Account[]>([])
   const [selectedAccountId, setSelectedAccountId] = useState<string | undefined>()
@@ -78,39 +74,28 @@ export function TransactionsPage() {
       setIsLoading(true)
       setError(null)
 
-      // Load transactions based on active tab
-      if (activeTab === 'all') {
-        const response = await transactionService.list({
-          account_id: selectedAccountId,
-          // Search payee only - memo_search is separate filter
-          payee_search: searchQuery || undefined,
-          date_from: filters.date_from,
-          date_to: filters.date_to,
-          amount_min: filters.amount_min,
-          amount_max: filters.amount_max,
-          category_id: filters.category_id,
-          state: filters.state as 'INBOX' | 'APPROVED' | 'CLEARED' | undefined,
-          uncategorized_only: filters.uncategorized_only,
-        })
-        setTransactions(response.transactions)
-      }
+      const response = await transactionService.list({
+        account_id: selectedAccountId,
+        payee_search: searchQuery || undefined,
+        date_from: filters.date_from,
+        date_to: filters.date_to,
+        amount_min: filters.amount_min,
+        amount_max: filters.amount_max,
+        category_id: filters.category_id,
+        state: filters.state as 'INBOX' | 'APPROVED' | 'CLEARED' | undefined,
+        uncategorized_only: filters.uncategorized_only,
+      })
+      setTransactions(response.transactions)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load data')
     } finally {
       setIsLoading(false)
     }
-  }, [activeTab, selectedAccountId, searchQuery, filters])
+  }, [selectedAccountId, searchQuery, filters])
 
   useEffect(() => {
     loadData()
   }, [loadData])
-
-  function handleTransactionApproved() {
-    // Refresh transactions list if on 'all' tab
-    if (activeTab === 'all') {
-      loadData()
-    }
-  }
 
   function formatCurrency(amount: string): string {
     const num = parseFloat(amount)
@@ -199,94 +184,70 @@ export function TransactionsPage() {
         />
       </div>
 
-      <div className="flex gap-1 mb-6">
-        <Button
-          variant={activeTab === 'inbox' ? 'default' : 'ghost'}
-          onClick={() => setActiveTab('inbox')}
-        >
-          Inbox
-        </Button>
-        <Button
-          variant={activeTab === 'all' ? 'default' : 'ghost'}
-          onClick={() => setActiveTab('all')}
-        >
-          All Transactions
-        </Button>
-      </div>
-
-      {activeTab === 'inbox' && (
-        <TransactionInbox
-          accountId={selectedAccountId}
-          searchQuery={searchQuery}
-          onTransactionApproved={handleTransactionApproved}
-        />
+      {isLoading && (
+        <Card className="p-6">
+          <div className="space-y-3">
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+          </div>
+        </Card>
       )}
 
-      {activeTab === 'all' && (
-        <>
-          {isLoading && (
-            <Card className="p-6">
-              <div className="space-y-3">
-                <Skeleton className="h-12 w-full" />
-                <Skeleton className="h-12 w-full" />
-                <Skeleton className="h-12 w-full" />
-              </div>
-            </Card>
-          )}
-          {error && (
-            <Card className="p-6 text-center">
-              <p className="text-destructive mb-4">Error: {error}</p>
-              <Button onClick={loadData}>Retry</Button>
-            </Card>
-          )}
-          {!isLoading && !error && transactions.length === 0 && (
-            <Card className="p-8 text-center text-muted-foreground">
-              <p>No transactions found.</p>
-            </Card>
-          )}
-          {!isLoading && !error && transactions.length > 0 && (
-            <Card>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Payee</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                    <TableHead>State</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {transactions.map((tx) => (
-                    <TableRow key={tx.id}>
-                      <TableCell className="text-muted-foreground">
-                        {formatDate(tx.date)}
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium">{tx.payee}</div>
-                        {tx.memo && (
-                          <div className="text-sm text-muted-foreground">{tx.memo}</div>
-                        )}
-                      </TableCell>
-                      <TableCell
-                        className={cn(
-                          'text-right tabular-nums',
-                          parseFloat(tx.amount) < 0 ? 'text-destructive' : 'text-green-600'
-                        )}
-                      >
-                        {formatCurrency(tx.amount)}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={getStateBadgeVariant(tx.state)}>
-                          {getStateLabel(tx.state)}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Card>
-          )}
-        </>
+      {error && (
+        <Card className="p-6 text-center">
+          <p className="text-destructive mb-4">Error: {error}</p>
+          <Button onClick={loadData}>Retry</Button>
+        </Card>
+      )}
+
+      {!isLoading && !error && transactions.length === 0 && (
+        <Card className="p-8 text-center text-muted-foreground">
+          <p>No transactions found.</p>
+        </Card>
+      )}
+
+      {!isLoading && !error && transactions.length > 0 && (
+        <Card>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Date</TableHead>
+                <TableHead>Payee</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {transactions.map((tx) => (
+                <TableRow key={tx.id}>
+                  <TableCell className="text-muted-foreground">
+                    {formatDate(tx.date)}
+                  </TableCell>
+                  <TableCell>
+                    <div className="font-medium">{tx.payee}</div>
+                    {tx.memo && (
+                      <div className="text-sm text-muted-foreground">{tx.memo}</div>
+                    )}
+                  </TableCell>
+                  <TableCell
+                    className={cn(
+                      'text-right tabular-nums',
+                      parseFloat(tx.amount) < 0 ? 'text-destructive' : 'text-green-600'
+                    )}
+                  >
+                    {formatCurrency(tx.amount)}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={getStateBadgeVariant(tx.state)}>
+                      {getStateLabel(tx.state)}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
       )}
 
       <AddTransactionModal
