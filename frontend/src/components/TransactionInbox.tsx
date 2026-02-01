@@ -35,14 +35,25 @@ import { cn } from '@/lib/utils'
 
 interface TransactionInboxProps {
   accountId?: string
+  searchQuery?: string
   onTransactionApproved?: (transaction: Transaction) => void
 }
 
 export function TransactionInbox({
   accountId,
+  searchQuery,
   onTransactionApproved,
 }: TransactionInboxProps) {
   const [transactions, setTransactions] = useState<Transaction[]>([])
+
+  // Filter transactions by search query (client-side for inbox)
+  const filteredTransactions = searchQuery
+    ? transactions.filter(
+        (tx) =>
+          tx.payee.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (tx.memo && tx.memo.toLowerCase().includes(searchQuery.toLowerCase()))
+      )
+    : transactions
   const [categories, setCategories] = useState<CategoryGroupWithCategories[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -111,10 +122,10 @@ export function TransactionInbox({
 
   // Batch selection handlers (FR-045)
   function handleSelectAll() {
-    if (selectedIds.size === transactions.length) {
+    if (selectedIds.size === filteredTransactions.length) {
       setSelectedIds(new Set())
     } else {
-      setSelectedIds(new Set(transactions.map((tx) => tx.id)))
+      setSelectedIds(new Set(filteredTransactions.map((tx) => tx.id)))
     }
   }
 
@@ -206,13 +217,23 @@ export function TransactionInbox({
     )
   }
 
-  const isAllSelected = selectedIds.size === transactions.length
-  const isIndeterminate = selectedIds.size > 0 && selectedIds.size < transactions.length
+  if (filteredTransactions.length === 0 && searchQuery) {
+    return (
+      <Card className="p-8 text-center text-muted-foreground">
+        <p>No transactions matching "{searchQuery}"</p>
+      </Card>
+    )
+  }
+
+  const isAllSelected = selectedIds.size === filteredTransactions.length && filteredTransactions.length > 0
+  const isIndeterminate = selectedIds.size > 0 && selectedIds.size < filteredTransactions.length
 
   return (
     <Card>
       <div className="p-4 border-b">
-        <h2 className="text-lg font-semibold">Inbox ({transactions.length})</h2>
+        <h2 className="text-lg font-semibold">
+          Inbox ({filteredTransactions.length}{searchQuery ? ` of ${transactions.length}` : ''})
+        </h2>
       </div>
 
       {/* Batch controls - visible when at least one transaction is selected (FR-045) */}
@@ -275,7 +296,7 @@ export function TransactionInbox({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {transactions.map((tx) => (
+          {filteredTransactions.map((tx) => (
             <TableRow key={tx.id} data-state={selectedIds.has(tx.id) ? 'selected' : undefined}>
               <TableCell>
                 <Checkbox

@@ -82,8 +82,8 @@ export function TransactionsPage() {
       if (activeTab === 'all') {
         const response = await transactionService.list({
           account_id: selectedAccountId,
+          // Search payee only - memo_search is separate filter
           payee_search: searchQuery || undefined,
-          memo_search: searchQuery || undefined,
           date_from: filters.date_from,
           date_to: filters.date_to,
           amount_min: filters.amount_min,
@@ -217,6 +217,7 @@ export function TransactionsPage() {
       {activeTab === 'inbox' && (
         <TransactionInbox
           accountId={selectedAccountId}
+          searchQuery={searchQuery}
           onTransactionApproved={handleTransactionApproved}
         />
       )}
